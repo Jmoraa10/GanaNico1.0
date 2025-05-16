@@ -1,0 +1,16 @@
+{
+  "rules": {
+    "fincas": {
+      "$fincaId": {
+        ".read": "auth != null && (root.child('usuarios').child(auth.uid).child('rol').val() === 'administrador' || root.child('usuarios').child(auth.uid).child('fincas').child($fincaId).exists())",
+        ".write": "auth != null && (root.child('usuarios').child(auth.uid).child('rol').val() === 'administrador' || root.child('usuarios').child(auth.uid).child('fincas').child($fincaId).exists())"
+      }
+    },
+    "usuarios": {
+      "$userId": {
+        ".read": "auth != null && (auth.uid === $userId || root.child('usuarios').child(auth.uid).child('rol').val() === 'administrador')",
+        ".write": "auth != null && (auth.uid === $userId || root.child('usuarios').child(auth.uid).child('rol').val() === 'administrador')"
+      }
+    }
+  }
+}

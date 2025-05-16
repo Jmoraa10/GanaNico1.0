@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Importamos la fuente RioGrande */
+@font-face {
+  font-family: 'RioGrande';
+  src: url('/fonts/RioGrande.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'RioGrande Striped';
+  src: url('/fonts/RioGrande Striped.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}

@@ -1,0 +1,29 @@
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Variables de entorno
+.env
+.env*.local
+
+# Dependencias
+node_modules/
+serviceAccountKey.json
+
+# Entornos de desarrollo/configuración
+.firebase/
+.firebaserc
+.dataconnect/
+
+# IDE/Editores
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Sistemas operativos
+Thumbs.db

@@ -1,0 +1,11 @@
+{"users": [
+{
+  "localId": "nK6W4G3Y6wXjJXmyMt6FDirN7L82",
+  "email": "johanmora.jm@gmail.com",
+  "emailVerified": false,
+  "passwordHash": "6wPSSW99RCctOvDgYLQ/zVF5AzNMTiJ7YjXRhYUSnD/5ebus0cmf2QDcsLuC6/J9BtvHuLiR6+8vV9lXWWJJ9A==",
+  "salt": "NCXe1bZDWfAnyQ==",
+  "createdAt": "1742144669183",
+  "disabled": false,
+  "providerUserInfo": []
+}]}
