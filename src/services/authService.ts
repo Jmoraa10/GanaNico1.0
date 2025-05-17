@@ -14,23 +14,21 @@ interface UserData {
 }
 
 const API = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://inversiones-bonitoviento-sas.onrender.com/api',
 });
 
 // Interceptor para manejar errores de autenticación
 API.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.error('Error en la petición API:', error.response?.data || error.message);
     if (error.response?.status === 401) {
-      // Limpiar datos de usuario
       localStorage.removeItem('user');
-      // Si la ruta contiene 'venta', mostrar diálogo en vez de redirigir
       const path = window.location.pathname.toLowerCase();
       if (path.includes('venta')) {
         window.dispatchEvent(new Event('tokenExpired'));
         return Promise.reject(error);
       }
-      // Si no es página de venta, redirigir
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -71,23 +69,40 @@ export const checkHealth = async (): Promise<HealthResponse> => {
 
 export const login = async (email: string, password: string): Promise<string> => {
   try {
+    console.log('Iniciando proceso de login con Firebase...');
     const auth = getAuth();
+    console.log('Auth instance obtenida');
+    
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    console.log('Usuario autenticado con Firebase');
+    
     const idToken = await userCredential.user.getIdToken();
+    console.log('Token obtenido de Firebase');
 
-    // Guardar el token y los datos del usuario
     const userData = {
       token: idToken,
       email: userCredential.user.email,
       uid: userCredential.user.uid
     };
     localStorage.setItem('user', JSON.stringify(userData));
+    console.log('Datos de usuario guardados en localStorage');
 
     return idToken;
   } catch (error: any) {
-    console.error('Error en el login:', error);
-    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-      throw new Error('Credenciales inválidas');
+    console.error('Error detallado en login:', {
+      code: error.code,
+      message: error.message,
+      fullError: error
+    });
+    
+    if (error.code === 'auth/user-not-found') {
+      throw new Error('No existe una cuenta con este correo electrónico');
+    } else if (error.code === 'auth/wrong-password') {
+      throw new Error('Contraseña incorrecta');
+    } else if (error.code === 'auth/invalid-credential') {
+      throw new Error('Credenciales inválidas. Por favor, verifica tu correo y contraseña');
+    } else if (error.code === 'auth/too-many-requests') {
+      throw new Error('Demasiados intentos fallidos. Por favor, intenta más tarde');
     } else {
       throw new Error('Error al iniciar sesión. Por favor, intente nuevamente.');
     }
@@ -96,6 +111,7 @@ export const login = async (email: string, password: string): Promise<string> =>
 
 export const logout = () => {
   localStorage.removeItem('user');
+  localStorage.removeItem('idToken');
 };
 
 export default API;
