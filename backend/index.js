@@ -227,20 +227,38 @@ const HOST = process.env.HOST || '0.0.0.0';
 // Función para verificar la conexión a MongoDB
 const checkMongoConnection = async () => {
   try {
-    await mongoose.connection.db.admin().ping();
-    console.log('✅ MongoDB Atlas conectado y respondiendo');
-    return true;
+    // Verificar si la conexión está establecida
+    if (mongoose.connection.readyState === 1) {
+      console.log('✅ MongoDB Atlas conectado y respondiendo');
+      return true;
+    } else {
+      console.log('🔄 Esperando conexión a MongoDB...');
+      // Esperar a que la conexión se establezca
+      await new Promise((resolve, reject) => {
+        mongoose.connection.once('connected', () => {
+          console.log('✅ MongoDB Atlas conectado y respondiendo');
+          resolve();
+        });
+        mongoose.connection.once('error', (err) => {
+          console.error('❌ Error de conexión a MongoDB:', err);
+          reject(err);
+        });
+      });
+      return true;
+    }
   } catch (error) {
     console.error('❌ Error al verificar conexión con MongoDB:', error);
     return false;
   }
 };
 
-// Verificar conexión antes de iniciar el servidor
-checkMongoConnection().then(isConnected => {
-  if (isConnected) {
-    app.listen(PORT, HOST, () => {
-      console.log(`
+// Iniciar el servidor después de verificar la conexión
+const startServer = async () => {
+  try {
+    const isConnected = await checkMongoConnection();
+    if (isConnected) {
+      app.listen(PORT, HOST, () => {
+        console.log(`
 ══════════════════════════════════════
 🛡️  Servidor en ejecución
 🔗 URL: http://${HOST}:${PORT}
@@ -248,9 +266,16 @@ checkMongoConnection().then(isConnected => {
 🌍 Dominios permitidos:
    - ${allowedDomains.join('\n   - ')}
 ══════════════════════════════════════`);
-    });
-  } else {
-    console.error('❌ No se pudo iniciar el servidor debido a problemas con la base de datos');
+      });
+    } else {
+      console.error('❌ No se pudo iniciar el servidor debido a problemas con la base de datos');
+      process.exit(1);
+    }
+  } catch (error) {
+    console.error('❌ Error al iniciar el servidor:', error);
     process.exit(1);
   }
-});
+};
+
+// Iniciar el servidor
+startServer();
