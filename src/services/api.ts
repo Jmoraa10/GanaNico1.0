@@ -10,6 +10,7 @@ const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'https://inversiones-bonitoviento-sas.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json'
   },
   withCredentials: true,
   timeout: 15000, // 15 segundos de timeout
@@ -23,26 +24,45 @@ API.interceptors.request.use(
     if (config.method === 'get') {
       config.params = { ...config.params, _t: Date.now() };
     }
+
+    // Log de la petición
+    console.log('🚀 Enviando petición:', {
+      url: config.url,
+      method: config.method,
+      headers: config.headers,
+      data: config.data
+    });
+
     return config;
   },
   (error) => {
-    console.error('Error en la configuración de la petición:', error);
+    console.error('❌ Error en la configuración de la petición:', error);
     return Promise.reject(error);
   }
 );
 
 // Interceptor para responses
 API.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Log de la respuesta exitosa
+    console.log('✅ Respuesta recibida:', {
+      url: response.config.url,
+      status: response.status,
+      headers: response.headers,
+      data: response.data
+    });
+    return response;
+  },
   (error) => {
     // Log detallado del error
-    console.error('Error en la petición API:', {
+    console.error('❌ Error en la petición API:', {
       url: error.config?.url,
       method: error.config?.method,
       status: error.response?.status,
       data: error.response?.data,
       message: error.message,
-      headers: error.config?.headers
+      headers: error.config?.headers,
+      responseHeaders: error.response?.headers
     });
 
     if (error.code === 'ERR_NETWORK') {
@@ -69,10 +89,12 @@ API.interceptors.response.use(
 // Función para probar la conectividad
 export const checkHealth = async (): Promise<HealthResponse> => {
   try {
+    console.log('🔍 Verificando conexión con el backend...');
     const response = await API.get<HealthResponse>('/health');
+    console.log('✅ Backend responde:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error al conectar con el backend:', error);
+    console.error('❌ Error al conectar con el backend:', error);
     throw error;
   }
 };

@@ -73,9 +73,17 @@ const allowedDomains = [
   'https://inversiones-bonitoviento-sas.onrender.com'
 ];
 
+// Middleware para logging de requests
+app.use((req, res, next) => {
+  console.log(`📨 ${req.method} ${req.path}`);
+  console.log('Headers:', req.headers);
+  next();
+});
+
 // Middleware para CORS
 app.use((req, res, next) => {
   const origin = req.headers.origin;
+  console.log('Origin recibido:', origin);
   
   // Permitir solicitudes sin origen (como las de Postman)
   if (!origin) {
@@ -96,10 +104,14 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token');
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Max-Age', '86400'); // 24 horas
+    console.log('✅ CORS headers configurados para:', origin);
+  } else {
+    console.log('⚠️ Dominio no permitido:', origin);
   }
 
   // Manejar preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('🔄 Procesando preflight request');
     return res.status(204).end();
   }
 
@@ -123,7 +135,7 @@ app.use(cors({
     if (isAllowed) {
       callback(null, true);
     } else {
-      console.log('⚠️ Dominio no permitido:', origin);
+      console.log('⚠️ Dominio no permitido (cors middleware):', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -133,12 +145,6 @@ app.use(cors({
   preflightContinue: false,
   optionsSuccessStatus: 204
 }));
-
-// Middleware para logging de requests
-app.use((req, res, next) => {
-  console.log(`📨 ${req.method} ${req.path} - Origin: ${req.headers.origin}`);
-  next();
-});
 
 app.use(express.json());
 
@@ -170,11 +176,13 @@ app.use((err, req, res, next) => {
 
 // Iniciar servidor
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const HOST = process.env.HOST || '0.0.0.0';
+
+app.listen(PORT, HOST, () => {
   console.log(`
 ══════════════════════════════════════
 🛡️  Servidor en ejecución
-🔗 URL: http://localhost:${PORT}
+🔗 URL: http://${HOST}:${PORT}
 📦 Base de datos: MongoDB Atlas (GanaNico1)
 🌍 Dominios permitidos:
    - ${allowedDomains.join('\n   - ')}
