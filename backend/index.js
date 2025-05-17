@@ -64,6 +64,18 @@ mongoose.connect(process.env.MONGODB_URI)
     console.error('❌ Error de conexión a MongoDB Atlas:', err.message);
   });
 
+// Middleware de logging detallado
+app.use((req, res, next) => {
+  console.log('\n🔍 Nueva solicitud recibida:');
+  console.log('📝 Método:', req.method);
+  console.log('🔗 URL:', req.url);
+  console.log('🌐 Origin:', req.headers.origin);
+  console.log('🔑 Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('📦 Body:', JSON.stringify(req.body, null, 2));
+  console.log('----------------------------------------\n');
+  next();
+});
+
 // Configuración CORS
 const allowedDomains = [
   'http://localhost',
@@ -81,34 +93,19 @@ app.use((req, res, next) => {
   next();
 });
 
-// Middleware para CORS
+// Middleware para CORS - Versión simplificada
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  console.log('Origin recibido:', origin);
-  
-  // Permitir solicitudes sin origen (como las de Postman)
-  if (!origin) {
-    return next();
-  }
+  console.log('🔍 CORS Middleware - Origin recibido:', origin);
+  console.log('🔍 CORS Middleware - Método:', req.method);
+  console.log('🔍 CORS Middleware - Ruta:', req.path);
 
-  // Verificar si el origen está en la lista de dominios permitidos
-  const isAllowed = allowedDomains.some(domain => 
-    origin === domain || 
-    origin.startsWith(domain) || 
-    origin.includes('localhost:') || 
-    origin.includes('127.0.0.1:')
-  );
-
-  if (isAllowed) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token, Accept');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Max-Age', '86400'); // 24 horas
-    console.log('✅ CORS headers configurados para:', origin);
-  } else {
-    console.log('⚠️ Dominio no permitido:', origin);
-  }
+  // Configurar headers CORS para todas las solicitudes
+  res.header('Access-Control-Allow-Origin', origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400');
 
   // Manejar preflight requests
   if (req.method === 'OPTIONS') {
@@ -121,25 +118,7 @@ app.use((req, res, next) => {
 
 // Configuración de CORS usando el middleware de cors
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    const isAllowed = allowedDomains.some(domain => 
-      origin === domain || 
-      origin.startsWith(domain) || 
-      origin.includes('localhost:') || 
-      origin.includes('127.0.0.1:')
-    );
-
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      console.log('⚠️ Dominio no permitido (cors middleware):', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true, // Permitir todos los orígenes
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Firebase-Token', 'Accept'],
   credentials: true,
@@ -151,6 +130,7 @@ app.use(express.json());
 
 // Ruta raíz para verificar que el servidor está funcionando
 app.get('/', (req, res) => {
+  console.log('📨 Request recibida en ruta raíz');
   res.json({
     status: '✅ Servidor funcionando',
     message: 'API de Inversiones Bonito Viento',
@@ -191,13 +171,22 @@ app.get('/api/health', (req, res) => {
 
 // Middleware específico para rutas de autenticación
 app.use('/api/auth', (req, res, next) => {
+  console.log('🔐 Auth Middleware - Request recibida');
+  console.log('🔐 Auth Middleware - Origin:', req.headers.origin);
+  console.log('🔐 Auth Middleware - Método:', req.method);
+  console.log('🔐 Auth Middleware - Ruta:', req.path);
+  
   const origin = req.headers.origin;
-  if (origin) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token, Accept');
-    res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Origin', origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    console.log('🔄 Auth Middleware - Procesando preflight request');
+    return res.status(204).end();
   }
+  
   next();
 });
 
@@ -211,6 +200,7 @@ app.use('/api/ventas', authenticate, ventaRoutes);
 // Manejo de errores
 app.use((err, req, res, next) => {
   console.error(`💥 Error: ${err.message}`);
+  console.error('Stack:', err.stack);
   res.status(500).json({ 
     error: 'Error interno del servidor',
     message: err.message
