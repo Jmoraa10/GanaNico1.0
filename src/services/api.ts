@@ -28,17 +28,6 @@ API.interceptors.request.use(
     if (config.method === 'get') {
       config.params = { ...config.params, _t: Date.now() };
     }
-
-    // Log de la petición
-    console.log('🚀 Enviando petición:', {
-      url: config.url,
-      method: config.method,
-      headers: config.headers,
-      data: config.data,
-      withCredentials: config.withCredentials,
-      baseURL: config.baseURL
-    });
-
     return config;
   },
   (error) => {
@@ -49,36 +38,9 @@ API.interceptors.request.use(
 
 // Interceptor para responses
 API.interceptors.response.use(
-  (response) => {
-    // Log de la respuesta exitosa
-    console.log('✅ Respuesta recibida:', {
-      url: response.config.url,
-      status: response.status,
-      headers: response.headers,
-      data: response.data
-    });
-    return response;
-  },
+  (response) => response,
   (error) => {
-    // Log detallado del error
-    console.error('❌ Error en la petición API:', {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
-      headers: error.config?.headers,
-      responseHeaders: error.response?.headers,
-      withCredentials: error.config?.withCredentials,
-      baseURL: error.config?.baseURL
-    });
-
     if (error.code === 'ERR_NETWORK') {
-      console.error('Error de red. Detalles:', {
-        url: error.config?.url,
-        baseURL: error.config?.baseURL,
-        headers: error.config?.headers
-      });
       throw new Error('No se pudo conectar con el servidor. Por favor, verifique su conexión a internet.');
     }
 

@@ -75,15 +75,11 @@ export const checkHealth = async (): Promise<HealthResponse> => {
 
 export const login = async (email: string, password: string) => {
   try {
-    console.log('Iniciando proceso de login...');
-    
     // Primero intentamos autenticar con Firebase
     const userCredential = await signInWithEmailAndPassword(getAuth(), email, password);
-    console.log('Autenticación con Firebase exitosa');
     
     // Obtenemos el token de Firebase
     const token = await userCredential.user.getIdToken();
-    console.log('Token obtenido exitosamente');
     
     // Configuramos el token en las cabeceras de la API
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -91,15 +87,11 @@ export const login = async (email: string, password: string) => {
     // Verificamos la conexión con el backend
     try {
       const response = await api.get('/auth/verify');
-      console.log('Verificación con backend exitosa:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('Error al verificar con el backend:', error);
       throw new Error('Error al conectar con el servidor. Por favor, intente más tarde.');
     }
   } catch (error: any) {
-    console.error('Error en el proceso de login:', error);
-    
     // Manejo específico de errores de Firebase
     switch (error.code) {
       case 'auth/invalid-credential':

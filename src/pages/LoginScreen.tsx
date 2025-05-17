@@ -17,14 +17,18 @@ const LoginScreen: React.FC = () => {
 
     try {
       console.log('Intentando iniciar sesión con:', email);
-      const idToken = await login(email, password);
+      const response = await login(email, password);
       console.log('Login exitoso, token recibido');
       
-      // Guardar el token y los datos del usuario
-      localStorage.setItem('idToken', idToken);
+      // Guardar el usuario y el token en localStorage
+      localStorage.setItem('user', JSON.stringify({
+        email: response.user.email,
+        token: response.user.token
+      }));
       console.log('Token guardado en localStorage');
       
-      navigate('/home');
+      // Redirigir a home
+      navigate('/home', { replace: true });
     } catch (err) {
       console.error('Error detallado en login:', err);
       if (err instanceof Error) {
