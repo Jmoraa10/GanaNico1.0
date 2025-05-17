@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const admin = require('firebase-admin');
 const { initializeApp } = require('firebase/app');
+const { corsOptions, allowedOrigins } = require('./config/corsOptions');
 const authRoutes = require('./routes/auth');
 const fincaRoutes = require('./routes/fincas');
 const movimientoRoutes = require('./routes/movimientos');
@@ -66,38 +67,23 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Middleware de logging detallado
 app.use((req, res, next) => {
-  // No loguear health checks de Render para evitar spam en los logs
+  // No loguear health checks de Render
   if (!req.headers['render-health-check']) {
     console.log('\n🔍 Nueva solicitud recibida:');
     console.log('📝 Método:', req.method);
     console.log('🔗 URL:', req.url);
     console.log('🌐 Origin:', req.headers.origin);
     console.log('🔑 Headers:', JSON.stringify(req.headers, null, 2));
-    console.log('📦 Body:', JSON.stringify(req.body, null, 2));
+    if (req.body) console.log('📦 Body:', JSON.stringify(req.body, null, 2));
     console.log('----------------------------------------\n');
   }
   next();
 });
 
-// Configuración CORS
-const allowedDomains = [
-  'http://localhost',
-  'http://localhost:5173',
-  'https://inversiones-bonitoviento-sas.firebaseapp.com',
-  'https://inversiones-bonitoviento-sas.web.app',
-  'https://inversiones-bonitoviento-sas.onrender.com',
-  'https://gananico1-0.onrender.com'
-];
+// Configuración de CORS
+app.use(cors(corsOptions));
 
-// Configuración de CORS usando el middleware de cors
-app.use(cors({
-  origin: 'https://inversiones-bonitoviento-sas.web.app',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Firebase-Token', 'Accept', 'Origin', 'X-Requested-With'],
-  credentials: true,
-  optionsSuccessStatus: 204
-}));
-
+// Middleware para parsear JSON
 app.use(express.json());
 
 // Ruta raíz para verificar que el servidor está funcionando
@@ -153,25 +139,19 @@ app.get('/api/health', (req, res) => {
 
 // Middleware específico para rutas de autenticación
 app.use('/api/auth', (req, res, next) => {
-  // No loguear health checks de Render
   if (!req.headers['render-health-check']) {
     console.log('🔐 Auth Middleware - Request recibida');
     console.log('🔐 Auth Middleware - Origin:', req.headers.origin);
     console.log('🔐 Auth Middleware - Método:', req.method);
     console.log('🔐 Auth Middleware - Ruta:', req.path);
   }
-  
-  // Configurar headers CORS específicamente para rutas de autenticación
-  res.header('Access-Control-Allow-Origin', 'https://inversiones-bonitoviento-sas.web.app');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token, Accept, Origin, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
+
+  // Manejar preflight requests
   if (req.method === 'OPTIONS') {
     console.log('🔄 Auth Middleware - Procesando preflight request');
     return res.status(204).end();
   }
-  
+
   next();
 });
 
@@ -236,7 +216,7 @@ const startServer = async () => {
 🔗 URL: http://${HOST}:${PORT}
 📦 Base de datos: MongoDB Atlas (GanaNico1)
 🌍 Dominios permitidos:
-   - ${allowedDomains.join('\n   - ')}
+   - ${allowedOrigins.join('\n   - ')}
 ══════════════════════════════════════`);
       });
     } else {
