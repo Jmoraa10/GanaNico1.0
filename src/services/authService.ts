@@ -21,9 +21,14 @@ const API = axios.create({
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('Error en la petición API:', error.response?.data || error.message);
+    console.error('Error en la petición API:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
     if (error.response?.status === 401) {
       localStorage.removeItem('user');
+      localStorage.removeItem('idToken');
       const path = window.location.pathname.toLowerCase();
       if (path.includes('venta')) {
         window.dispatchEvent(new Event('tokenExpired'));
@@ -73,9 +78,11 @@ export const login = async (email: string, password: string): Promise<string> =>
     const auth = getAuth();
     console.log('Auth instance obtenida');
     
+    console.log('Intentando autenticar con Firebase...');
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    console.log('Usuario autenticado con Firebase');
+    console.log('Usuario autenticado con Firebase:', userCredential.user.email);
     
+    console.log('Obteniendo token de Firebase...');
     const idToken = await userCredential.user.getIdToken();
     console.log('Token obtenido de Firebase');
 
@@ -103,8 +110,10 @@ export const login = async (email: string, password: string): Promise<string> =>
       throw new Error('Credenciales inválidas. Por favor, verifica tu correo y contraseña');
     } else if (error.code === 'auth/too-many-requests') {
       throw new Error('Demasiados intentos fallidos. Por favor, intenta más tarde');
+    } else if (error.code === 'auth/network-request-failed') {
+      throw new Error('Error de conexión. Por favor, verifica tu conexión a internet');
     } else {
-      throw new Error('Error al iniciar sesión. Por favor, intente nuevamente.');
+      throw new Error(`Error al iniciar sesión: ${error.message}`);
     }
   }
 };
