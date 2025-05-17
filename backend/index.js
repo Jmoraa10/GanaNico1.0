@@ -100,10 +100,15 @@ app.use((req, res, next) => {
     console.log('🔍 CORS Middleware - Ruta:', req.path);
   }
 
-  // Configurar headers CORS para todas las solicitudes
-  res.header('Access-Control-Allow-Origin', origin || '*');
+  // Verificar si el origen está permitido
+  if (origin && allowedDomains.some(domain => origin.startsWith(domain))) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token, Accept');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token, Accept, Origin, X-Requested-With');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Max-Age', '86400');
 
@@ -118,9 +123,15 @@ app.use((req, res, next) => {
 
 // Configuración de CORS usando el middleware de cors
 app.use(cors({
-  origin: true, // Permitir todos los orígenes
+  origin: function(origin, callback) {
+    if (!origin || allowedDomains.some(domain => origin.startsWith(domain))) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Firebase-Token', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Firebase-Token', 'Accept', 'Origin', 'X-Requested-With'],
   credentials: true,
   preflightContinue: false,
   optionsSuccessStatus: 204
@@ -190,9 +201,14 @@ app.use('/api/auth', (req, res, next) => {
   }
   
   const origin = req.headers.origin;
-  res.header('Access-Control-Allow-Origin', origin || '*');
+  if (origin && allowedDomains.some(domain => origin.startsWith(domain))) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token, Accept');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token, Accept, Origin, X-Requested-With');
   res.header('Access-Control-Allow-Credentials', 'true');
   
   if (req.method === 'OPTIONS') {
