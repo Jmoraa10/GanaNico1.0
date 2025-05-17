@@ -66,13 +66,16 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Middleware de logging detallado
 app.use((req, res, next) => {
-  console.log('\n🔍 Nueva solicitud recibida:');
-  console.log('📝 Método:', req.method);
-  console.log('🔗 URL:', req.url);
-  console.log('🌐 Origin:', req.headers.origin);
-  console.log('🔑 Headers:', JSON.stringify(req.headers, null, 2));
-  console.log('📦 Body:', JSON.stringify(req.body, null, 2));
-  console.log('----------------------------------------\n');
+  // No loguear health checks de Render para evitar spam en los logs
+  if (!req.headers['render-health-check']) {
+    console.log('\n🔍 Nueva solicitud recibida:');
+    console.log('📝 Método:', req.method);
+    console.log('🔗 URL:', req.url);
+    console.log('🌐 Origin:', req.headers.origin);
+    console.log('🔑 Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('📦 Body:', JSON.stringify(req.body, null, 2));
+    console.log('----------------------------------------\n');
+  }
   next();
 });
 
@@ -86,19 +89,16 @@ const allowedDomains = [
   'https://gananico1-0.onrender.com'
 ];
 
-// Middleware para logging de todas las rutas
-app.use((req, res, next) => {
-  console.log(`📨 ${req.method} ${req.path}`);
-  console.log('Headers:', JSON.stringify(req.headers, null, 2));
-  next();
-});
-
 // Middleware para CORS - Versión simplificada
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  console.log('🔍 CORS Middleware - Origin recibido:', origin);
-  console.log('🔍 CORS Middleware - Método:', req.method);
-  console.log('🔍 CORS Middleware - Ruta:', req.path);
+  
+  // No loguear health checks de Render
+  if (!req.headers['render-health-check']) {
+    console.log('🔍 CORS Middleware - Origin recibido:', origin);
+    console.log('🔍 CORS Middleware - Método:', req.method);
+    console.log('🔍 CORS Middleware - Ruta:', req.path);
+  }
 
   // Configurar headers CORS para todas las solicitudes
   res.header('Access-Control-Allow-Origin', origin || '*');
@@ -130,6 +130,11 @@ app.use(express.json());
 
 // Ruta raíz para verificar que el servidor está funcionando
 app.get('/', (req, res) => {
+  // Respuesta simple para health checks de Render
+  if (req.headers['render-health-check']) {
+    return res.status(200).send('OK');
+  }
+
   console.log('📨 Request recibida en ruta raíz');
   res.json({
     status: '✅ Servidor funcionando',
@@ -140,6 +145,11 @@ app.get('/', (req, res) => {
 
 // Rutas de health check
 app.get('/health', (req, res) => {
+  // Respuesta simple para health checks de Render
+  if (req.headers['render-health-check']) {
+    return res.status(200).send('OK');
+  }
+
   console.log('🔍 Health check request recibido en /health');
   console.log('Headers:', JSON.stringify(req.headers, null, 2));
   res.json({
@@ -171,10 +181,13 @@ app.get('/api/health', (req, res) => {
 
 // Middleware específico para rutas de autenticación
 app.use('/api/auth', (req, res, next) => {
-  console.log('🔐 Auth Middleware - Request recibida');
-  console.log('🔐 Auth Middleware - Origin:', req.headers.origin);
-  console.log('🔐 Auth Middleware - Método:', req.method);
-  console.log('🔐 Auth Middleware - Ruta:', req.path);
+  // No loguear health checks de Render
+  if (!req.headers['render-health-check']) {
+    console.log('🔐 Auth Middleware - Request recibida');
+    console.log('🔐 Auth Middleware - Origin:', req.headers.origin);
+    console.log('🔐 Auth Middleware - Método:', req.method);
+    console.log('🔐 Auth Middleware - Ruta:', req.path);
+  }
   
   const origin = req.headers.origin;
   res.header('Access-Control-Allow-Origin', origin || '*');
@@ -211,8 +224,23 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 
-app.listen(PORT, HOST, () => {
-  console.log(`
+// Función para verificar la conexión a MongoDB
+const checkMongoConnection = async () => {
+  try {
+    await mongoose.connection.db.admin().ping();
+    console.log('✅ MongoDB Atlas conectado y respondiendo');
+    return true;
+  } catch (error) {
+    console.error('❌ Error al verificar conexión con MongoDB:', error);
+    return false;
+  }
+};
+
+// Verificar conexión antes de iniciar el servidor
+checkMongoConnection().then(isConnected => {
+  if (isConnected) {
+    app.listen(PORT, HOST, () => {
+      console.log(`
 ══════════════════════════════════════
 🛡️  Servidor en ejecución
 🔗 URL: http://${HOST}:${PORT}
@@ -220,4 +248,9 @@ app.listen(PORT, HOST, () => {
 🌍 Dominios permitidos:
    - ${allowedDomains.join('\n   - ')}
 ══════════════════════════════════════`);
+    });
+  } else {
+    console.error('❌ No se pudo iniciar el servidor debido a problemas con la base de datos');
+    process.exit(1);
+  }
 });
