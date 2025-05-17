@@ -89,51 +89,12 @@ const allowedDomains = [
   'https://gananico1-0.onrender.com'
 ];
 
-// Middleware para CORS - Versión simplificada
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  
-  // No loguear health checks de Render
-  if (!req.headers['render-health-check']) {
-    console.log('🔍 CORS Middleware - Origin recibido:', origin);
-    console.log('🔍 CORS Middleware - Método:', req.method);
-    console.log('🔍 CORS Middleware - Ruta:', req.path);
-  }
-
-  // Verificar si el origen está permitido
-  if (origin && allowedDomains.some(domain => origin.startsWith(domain))) {
-    res.header('Access-Control-Allow-Origin', origin);
-  } else {
-    res.header('Access-Control-Allow-Origin', '*');
-  }
-
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token, Accept, Origin, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400');
-
-  // Manejar preflight requests
-  if (req.method === 'OPTIONS') {
-    console.log('🔄 Procesando preflight request para:', req.path);
-    return res.status(204).end();
-  }
-
-  next();
-});
-
 // Configuración de CORS usando el middleware de cors
 app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedDomains.some(domain => origin.startsWith(domain))) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: 'https://inversiones-bonitoviento-sas.web.app',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Firebase-Token', 'Accept', 'Origin', 'X-Requested-With'],
   credentials: true,
-  preflightContinue: false,
   optionsSuccessStatus: 204
 }));
 
@@ -200,13 +161,8 @@ app.use('/api/auth', (req, res, next) => {
     console.log('🔐 Auth Middleware - Ruta:', req.path);
   }
   
-  const origin = req.headers.origin;
-  if (origin && allowedDomains.some(domain => origin.startsWith(domain))) {
-    res.header('Access-Control-Allow-Origin', origin);
-  } else {
-    res.header('Access-Control-Allow-Origin', '*');
-  }
-  
+  // Configurar headers CORS específicamente para rutas de autenticación
+  res.header('Access-Control-Allow-Origin', 'https://inversiones-bonitoviento-sas.web.app');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token, Accept, Origin, X-Requested-With');
   res.header('Access-Control-Allow-Credentials', 'true');
