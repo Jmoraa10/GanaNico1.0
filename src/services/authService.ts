@@ -18,8 +18,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('user');
-      localStorage.removeItem('idToken');
+      localStorage.clear();
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -32,8 +31,17 @@ export const getAuthToken = async (): Promise<string> => {
   if (!userData) {
     throw new Error('No hay sesión activa');
   }
-  const { token } = JSON.parse(userData) as UserData;
-  return token;
+  
+  try {
+    const { token } = JSON.parse(userData) as UserData;
+    if (!token) {
+      throw new Error('Token no encontrado');
+    }
+    return token;
+  } catch (error) {
+    localStorage.clear();
+    throw new Error('Error al obtener el token');
+  }
 };
 
 export const checkHealth = async (): Promise<HealthResponse> => {
@@ -66,6 +74,10 @@ export const login = async (email: string, password: string) => {
     // Obtenemos el token de Firebase
     const token = await userCredential.user.getIdToken();
     
+    if (!token) {
+      throw new Error('No se pudo obtener el token de Firebase');
+    }
+    
     // Configuramos el token en las cabeceras de la API
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     
@@ -76,7 +88,7 @@ export const login = async (email: string, password: string) => {
     if (response.data.authenticated) {
       return {
         user: {
-          email: userCredential.user.email,
+          email: userCredential.user.email || '',
           token: token,
           uid: userCredential.user.uid
         }
@@ -106,8 +118,7 @@ export const login = async (email: string, password: string) => {
 export const logout = async () => {
   try {
     await signOut(getAuth());
-    localStorage.removeItem('user');
-    localStorage.removeItem('idToken');
+    localStorage.clear();
     delete api.defaults.headers.common['Authorization'];
     return true;
   } catch (error) {
@@ -119,6 +130,8 @@ export const logout = async () => {
 export const checkAuth = async () => {
   try {
     const token = await getAuthToken();
+    if (!token) return false;
+    
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     const response = await api.get('/auth/verify');
     return response.data.authenticated;

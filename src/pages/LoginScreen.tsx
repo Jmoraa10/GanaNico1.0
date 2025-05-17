@@ -18,15 +18,30 @@ const LoginScreen: React.FC = () => {
     try {
       const response = await login(email, password);
       
+      // Asegurarnos de que tenemos todos los datos necesarios
+      if (!response.user || !response.user.token) {
+        throw new Error('Error en la respuesta del servidor');
+      }
+
       // Guardar el usuario y el token en localStorage
       const userData = {
         email: response.user.email,
         token: response.user.token,
         uid: response.user.uid
       };
+
+      // Limpiar localStorage antes de guardar nuevos datos
+      localStorage.clear();
       
+      // Guardar los datos en localStorage
       localStorage.setItem('user', JSON.stringify(userData));
       
+      // Verificar que los datos se guardaron correctamente
+      const storedData = localStorage.getItem('user');
+      if (!storedData) {
+        throw new Error('Error al guardar los datos de sesión');
+      }
+
       // Redirigir a home
       navigate('/home', { replace: true });
     } catch (err) {
