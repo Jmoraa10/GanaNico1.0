@@ -1,6 +1,7 @@
 import axios from 'axios';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import '../firebaseConfig';
+import api from './api';
 
 interface HealthResponse {
   status: string;
@@ -72,55 +73,70 @@ export const checkHealth = async (): Promise<HealthResponse> => {
   }
 };
 
-export const login = async (email: string, password: string): Promise<string> => {
+export const login = async (email: string, password: string) => {
   try {
-    console.log('Iniciando proceso de login con Firebase...');
-    const auth = getAuth();
-    console.log('Auth instance obtenida');
+    console.log('Iniciando proceso de login...');
     
-    console.log('Intentando autenticar con Firebase...');
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    console.log('Usuario autenticado con Firebase:', userCredential.user.email);
+    // Primero intentamos autenticar con Firebase
+    const userCredential = await signInWithEmailAndPassword(getAuth(), email, password);
+    console.log('Autenticación con Firebase exitosa');
     
-    console.log('Obteniendo token de Firebase...');
-    const idToken = await userCredential.user.getIdToken();
-    console.log('Token obtenido de Firebase');
-
-    const userData = {
-      token: idToken,
-      email: userCredential.user.email,
-      uid: userCredential.user.uid
-    };
-    localStorage.setItem('user', JSON.stringify(userData));
-    console.log('Datos de usuario guardados en localStorage');
-
-    return idToken;
+    // Obtenemos el token de Firebase
+    const token = await userCredential.user.getIdToken();
+    console.log('Token obtenido exitosamente');
+    
+    // Configuramos el token en las cabeceras de la API
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    
+    // Verificamos la conexión con el backend
+    try {
+      const response = await api.get('/auth/verify');
+      console.log('Verificación con backend exitosa:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error al verificar con el backend:', error);
+      throw new Error('Error al conectar con el servidor. Por favor, intente más tarde.');
+    }
   } catch (error: any) {
-    console.error('Error detallado en login:', {
-      code: error.code,
-      message: error.message,
-      fullError: error
-    });
+    console.error('Error en el proceso de login:', error);
     
-    if (error.code === 'auth/user-not-found') {
-      throw new Error('No existe una cuenta con este correo electrónico');
-    } else if (error.code === 'auth/wrong-password') {
-      throw new Error('Contraseña incorrecta');
-    } else if (error.code === 'auth/invalid-credential') {
-      throw new Error('Credenciales inválidas. Por favor, verifica tu correo y contraseña');
-    } else if (error.code === 'auth/too-many-requests') {
-      throw new Error('Demasiados intentos fallidos. Por favor, intenta más tarde');
-    } else if (error.code === 'auth/network-request-failed') {
-      throw new Error('Error de conexión. Por favor, verifica tu conexión a internet');
-    } else {
-      throw new Error(`Error al iniciar sesión: ${error.message}`);
+    // Manejo específico de errores de Firebase
+    switch (error.code) {
+      case 'auth/invalid-credential':
+        throw new Error('Credenciales inválidas. Por favor, verifique su email y contraseña.');
+      case 'auth/user-disabled':
+        throw new Error('Esta cuenta ha sido deshabilitada. Contacte al administrador.');
+      case 'auth/user-not-found':
+        throw new Error('No existe una cuenta con este email.');
+      case 'auth/wrong-password':
+        throw new Error('Contraseña incorrecta.');
+      case 'auth/too-many-requests':
+        throw new Error('Demasiados intentos fallidos. Por favor, intente más tarde.');
+      default:
+        throw new Error('Error al iniciar sesión. Por favor, intente nuevamente.');
     }
   }
 };
 
-export const logout = () => {
-  localStorage.removeItem('user');
-  localStorage.removeItem('idToken');
+export const logout = async () => {
+  try {
+    await signOut(getAuth());
+    delete api.defaults.headers.common['Authorization'];
+    return true;
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+    throw new Error('Error al cerrar sesión');
+  }
+};
+
+export const checkAuth = async () => {
+  try {
+    const response = await api.get('/auth/verify');
+    return response.data;
+  } catch (error) {
+    console.error('Error al verificar autenticación:', error);
+    return false;
+  }
 };
 
 export default API;

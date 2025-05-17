@@ -67,8 +67,10 @@ mongoose.connect(process.env.MONGODB_URI)
 // Configuración CORS
 const allowedDomains = [
   'http://localhost',
+  'http://localhost:5173',
   'https://inversiones-bonitoviento-sas.firebaseapp.com',
-  'https://inversiones-bonitoviento-sas.web.app'
+  'https://inversiones-bonitoviento-sas.web.app',
+  'https://inversiones-bonitoviento-sas.onrender.com'
 ];
 
 app.use(cors({
@@ -79,7 +81,12 @@ app.use(cors({
       origin.includes('localhost:') || 
       origin.includes('127.0.0.1:')
     );
-    isAllowed ? callback(null, true) : callback(new Error('Not allowed by CORS'));
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log('Dominio no permitido:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Firebase-Token'],
