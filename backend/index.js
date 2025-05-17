@@ -70,13 +70,14 @@ const allowedDomains = [
   'http://localhost:5173',
   'https://inversiones-bonitoviento-sas.firebaseapp.com',
   'https://inversiones-bonitoviento-sas.web.app',
-  'https://inversiones-bonitoviento-sas.onrender.com'
+  'https://inversiones-bonitoviento-sas.onrender.com',
+  'https://gananico1-0.onrender.com'
 ];
 
-// Middleware para logging de requests
+// Middleware para logging de todas las rutas
 app.use((req, res, next) => {
   console.log(`📨 ${req.method} ${req.path}`);
-  console.log('Headers:', req.headers);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
   next();
 });
 
@@ -101,7 +102,7 @@ app.use((req, res, next) => {
   if (isAllowed) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token, Accept');
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Max-Age', '86400'); // 24 horas
     console.log('✅ CORS headers configurados para:', origin);
@@ -140,7 +141,7 @@ app.use(cors({
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Firebase-Token'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Firebase-Token', 'Accept'],
   credentials: true,
   preflightContinue: false,
   optionsSuccessStatus: 204
@@ -148,17 +149,38 @@ app.use(cors({
 
 app.use(express.json());
 
-// Ruta de verificación de salud
-app.get('/api/health', (req, res) => {
+// Rutas de health check
+app.get('/health', (req, res) => {
+  console.log('🔍 Health check request recibido en /health');
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
   res.json({
     status: '✅ Saludable',
     database: 'MongoDB Atlas (GanaNico1)',
     firebase: 'Conectado',
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    cors: {
+      origin: req.headers.origin,
+      allowedDomains
+    }
   });
 });
 
-// Rutas
+app.get('/api/health', (req, res) => {
+  console.log('🔍 Health check request recibido en /api/health');
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  res.json({
+    status: '✅ Saludable',
+    database: 'MongoDB Atlas (GanaNico1)',
+    firebase: 'Conectado',
+    environment: process.env.NODE_ENV || 'development',
+    cors: {
+      origin: req.headers.origin,
+      allowedDomains
+    }
+  });
+});
+
+// Rutas de la API
 app.use('/api/auth', authRoutes);
 app.use('/api/fincas', authenticate, fincaRoutes);
 app.use('/api/movimientos', authenticate, movimientoRoutes);

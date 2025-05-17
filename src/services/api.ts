@@ -3,11 +3,15 @@ import axios from 'axios';
 interface HealthResponse {
   status: string;
   message?: string;
+  cors?: {
+    origin: string;
+    allowedDomains: string[];
+  };
 }
 
 // Configuración de la URL base del backend
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://inversiones-bonitoviento-sas.onrender.com/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://inversiones-bonitoviento-sas.onrender.com',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
@@ -30,7 +34,9 @@ API.interceptors.request.use(
       url: config.url,
       method: config.method,
       headers: config.headers,
-      data: config.data
+      data: config.data,
+      withCredentials: config.withCredentials,
+      baseURL: config.baseURL
     });
 
     return config;
@@ -62,10 +68,17 @@ API.interceptors.response.use(
       data: error.response?.data,
       message: error.message,
       headers: error.config?.headers,
-      responseHeaders: error.response?.headers
+      responseHeaders: error.response?.headers,
+      withCredentials: error.config?.withCredentials,
+      baseURL: error.config?.baseURL
     });
 
     if (error.code === 'ERR_NETWORK') {
+      console.error('Error de red. Detalles:', {
+        url: error.config?.url,
+        baseURL: error.config?.baseURL,
+        headers: error.config?.headers
+      });
       throw new Error('No se pudo conectar con el servidor. Por favor, verifique su conexión a internet.');
     }
 
@@ -90,8 +103,19 @@ API.interceptors.response.use(
 export const checkHealth = async (): Promise<HealthResponse> => {
   try {
     console.log('🔍 Verificando conexión con el backend...');
-    const response = await API.get<HealthResponse>('/health');
-    console.log('✅ Backend responde:', response.data);
+    
+    // Intentar primero con /health
+    try {
+      const response = await API.get<HealthResponse>('/health');
+      console.log('✅ Backend responde en /health:', response.data);
+      return response.data;
+    } catch (error) {
+      console.log('⚠️ Error en /health, intentando con /api/health');
+    }
+    
+    // Si falla, intentar con /api/health
+    const response = await API.get<HealthResponse>('/api/health');
+    console.log('✅ Backend responde en /api/health:', response.data);
     return response.data;
   } catch (error) {
     console.error('❌ Error al conectar con el backend:', error);
