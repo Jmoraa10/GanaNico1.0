@@ -149,6 +149,15 @@ app.use(cors({
 
 app.use(express.json());
 
+// Ruta raíz para verificar que el servidor está funcionando
+app.get('/', (req, res) => {
+  res.json({
+    status: '✅ Servidor funcionando',
+    message: 'API de Inversiones Bonito Viento',
+    version: '1.0.0'
+  });
+});
+
 // Rutas de health check
 app.get('/health', (req, res) => {
   console.log('🔍 Health check request recibido en /health');
