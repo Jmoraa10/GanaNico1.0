@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getAuthToken } from './authService';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://gananico1-0.onrender.com/api';
 
 // Función auxiliar para hacer solicitudes autenticadas
 const fetchWithAuth = async (url: string, options: RequestInit = {}) => {

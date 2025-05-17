@@ -5,7 +5,6 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const admin = require('firebase-admin');
 const { initializeApp } = require('firebase/app');
-const { corsOptions, allowedOrigins } = require('./config/corsOptions');
 const authRoutes = require('./routes/auth');
 const fincaRoutes = require('./routes/fincas');
 const movimientoRoutes = require('./routes/movimientos');
@@ -65,35 +64,58 @@ mongoose.connect(process.env.MONGODB_URI)
     console.error('❌ Error de conexión a MongoDB Atlas:', err.message);
   });
 
-// Middleware de logging detallado
+// Middleware para logging de todas las rutas
 app.use((req, res, next) => {
-  // No loguear health checks de Render
-  if (!req.headers['render-health-check']) {
-    console.log('\n🔍 Nueva solicitud recibida:');
-    console.log('📝 Método:', req.method);
-    console.log('🔗 URL:', req.url);
-    console.log('🌐 Origin:', req.headers.origin);
-    console.log('🔑 Headers:', JSON.stringify(req.headers, null, 2));
-    if (req.body) console.log('📦 Body:', JSON.stringify(req.body, null, 2));
-    console.log('----------------------------------------\n');
-  }
+  console.log(`📨 ${req.method} ${req.path}`);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
   next();
 });
 
-// Configuración de CORS
-app.use(cors(corsOptions));
+// Configuración CORS
+const allowedDomains = process.env.ALLOWED_ORIGINS ? 
+  process.env.ALLOWED_ORIGINS.split(',') : [
+    'http://localhost',
+    'http://localhost:5173',
+    'https://inversiones-bonitoviento-sas.firebaseapp.com',
+    'https://inversiones-bonitoviento-sas.web.app',
+    'https://inversiones-bonitoviento-sas.onrender.com',
+    'https://gananico1-0.onrender.com'
+  ];
 
-// Middleware para parsear JSON
+// Configuración de CORS usando el middleware de cors
+app.use(cors({
+  origin: function (origin, callback) {
+    // Permitir solicitudes sin origin (como las de Postman)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Verificar si el origen está en la lista de dominios permitidos
+    const isAllowed = allowedDomains.some(domain => 
+      origin === domain || 
+      origin.startsWith(domain) || 
+      (domain.includes('localhost') && (origin.includes('localhost:') || origin.includes('127.0.0.1:')))
+    );
+
+    if (isAllowed) {
+      console.log('✅ CORS permitido para:', origin);
+      callback(null, true);
+    } else {
+      console.log('⚠️ CORS bloqueado para:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Firebase-Token', 'Accept'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+}));
+
 app.use(express.json());
 
 // Ruta raíz para verificar que el servidor está funcionando
 app.get('/', (req, res) => {
-  // Respuesta simple para health checks de Render
-  if (req.headers['render-health-check']) {
-    return res.status(200).send('OK');
-  }
-
-  console.log('📨 Request recibida en ruta raíz');
   res.json({
     status: '✅ Servidor funcionando',
     message: 'API de Inversiones Bonito Viento',
@@ -103,11 +125,6 @@ app.get('/', (req, res) => {
 
 // Rutas de health check
 app.get('/health', (req, res) => {
-  // Respuesta simple para health checks de Render
-  if (req.headers['render-health-check']) {
-    return res.status(200).send('OK');
-  }
-
   console.log('🔍 Health check request recibido en /health');
   console.log('Headers:', JSON.stringify(req.headers, null, 2));
   res.json({
@@ -137,24 +154,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Middleware específico para rutas de autenticación
-app.use('/api/auth', (req, res, next) => {
-  if (!req.headers['render-health-check']) {
-    console.log('🔐 Auth Middleware - Request recibida');
-    console.log('🔐 Auth Middleware - Origin:', req.headers.origin);
-    console.log('🔐 Auth Middleware - Método:', req.method);
-    console.log('🔐 Auth Middleware - Ruta:', req.path);
-  }
-
-  // Manejar preflight requests
-  if (req.method === 'OPTIONS') {
-    console.log('🔄 Auth Middleware - Procesando preflight request');
-    return res.status(204).end();
-  }
-
-  next();
-});
-
 // Rutas de la API
 app.use('/api/auth', authRoutes);
 app.use('/api/fincas', authenticate, fincaRoutes);
@@ -165,7 +164,6 @@ app.use('/api/ventas', authenticate, ventaRoutes);
 // Manejo de errores
 app.use((err, req, res, next) => {
   console.error(`💥 Error: ${err.message}`);
-  console.error('Stack:', err.stack);
   res.status(500).json({ 
     error: 'Error interno del servidor',
     message: err.message
@@ -176,58 +174,13 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 
-// Función para verificar la conexión a MongoDB
-const checkMongoConnection = async () => {
-  try {
-    // Verificar si la conexión está establecida
-    if (mongoose.connection.readyState === 1) {
-      console.log('✅ MongoDB Atlas conectado y respondiendo');
-      return true;
-    } else {
-      console.log('🔄 Esperando conexión a MongoDB...');
-      // Esperar a que la conexión se establezca
-      await new Promise((resolve, reject) => {
-        mongoose.connection.once('connected', () => {
-          console.log('✅ MongoDB Atlas conectado y respondiendo');
-          resolve();
-        });
-        mongoose.connection.once('error', (err) => {
-          console.error('❌ Error de conexión a MongoDB:', err);
-          reject(err);
-        });
-      });
-      return true;
-    }
-  } catch (error) {
-    console.error('❌ Error al verificar conexión con MongoDB:', error);
-    return false;
-  }
-};
-
-// Iniciar el servidor después de verificar la conexión
-const startServer = async () => {
-  try {
-    const isConnected = await checkMongoConnection();
-    if (isConnected) {
-      app.listen(PORT, HOST, () => {
-        console.log(`
+app.listen(PORT, HOST, () => {
+  console.log(`
 ══════════════════════════════════════
 🛡️  Servidor en ejecución
 🔗 URL: http://${HOST}:${PORT}
 📦 Base de datos: MongoDB Atlas (GanaNico1)
 🌍 Dominios permitidos:
-   - ${allowedOrigins.join('\n   - ')}
+   - ${allowedDomains.join('\n   - ')}
 ══════════════════════════════════════`);
-      });
-    } else {
-      console.error('❌ No se pudo iniciar el servidor debido a problemas con la base de datos');
-      process.exit(1);
-    }
-  } catch (error) {
-    console.error('❌ Error al iniciar el servidor:', error);
-    process.exit(1);
-  }
-};
-
-// Iniciar el servidor
-startServer();
+});

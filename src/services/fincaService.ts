@@ -115,7 +115,7 @@ const saveFincasToLocalStorage = (fincas: Finca[]): void => {
 };
 
 // URLs base de la API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://gananico1-0.onrender.com/api';
 
 // Función auxiliar para obtener el token de Firebase
 const getAuthToken = async (): Promise<string> => {

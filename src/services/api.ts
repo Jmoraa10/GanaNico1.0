@@ -11,7 +11,7 @@ interface HealthResponse {
 
 // Configuración de la URL base del backend
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://inversiones-bonitoviento-sas.onrender.com',
+  baseURL: import.meta.env.VITE_API_URL || 'https://gananico1-0.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
