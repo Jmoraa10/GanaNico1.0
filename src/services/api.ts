@@ -11,18 +11,35 @@ const API = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true
+  withCredentials: true,
+  timeout: 10000 // 10 segundos de timeout
 });
 
 // Interceptor para manejar errores
 API.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.code === 'ERR_NETWORK') {
+      console.error('Error de red al conectar con el backend:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        baseURL: error.config?.baseURL
+      });
+      throw new Error('No se pudo conectar con el servidor. Por favor, verifique su conexión a internet.');
+    }
+
+    if (error.response?.status === 401) {
+      console.error('Error de autenticación:', error.response.data);
+      throw new Error('Su sesión ha expirado. Por favor, inicie sesión nuevamente.');
+    }
+
     console.error('Error en la petición API:', {
       status: error.response?.status,
       data: error.response?.data,
-      message: error.message
+      message: error.message,
+      url: error.config?.url
     });
+
     return Promise.reject(error);
   }
 );

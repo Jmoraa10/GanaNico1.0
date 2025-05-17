@@ -75,23 +75,44 @@ const allowedDomains = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
+    // Permitir solicitudes sin origen (como las de Postman)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Verificar si el origen está en la lista de dominios permitidos
     const isAllowed = allowedDomains.some(domain => 
+      origin === domain || 
       origin.startsWith(domain) || 
       origin.includes('localhost:') || 
       origin.includes('127.0.0.1:')
     );
+
     if (isAllowed) {
       callback(null, true);
     } else {
-      console.log('Dominio no permitido:', origin);
+      console.log('⚠️ Dominio no permitido:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Firebase-Token'],
-  credentials: true
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
+// Agregar headers CORS manualmente para asegurar que estén presentes
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && allowedDomains.some(domain => origin.startsWith(domain))) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token');
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  next();
+});
 
 app.use(express.json());
 
