@@ -17,13 +17,19 @@ const API = axios.create({
     'Accept': 'application/json'
   },
   withCredentials: true,
-  timeout: 15000, // 15 segundos de timeout
-  validateStatus: (status) => status >= 200 && status < 500 // Aceptar todos los status codes excepto errores del servidor
+  timeout: 15000
 });
 
 // Interceptor para requests
 API.interceptors.request.use(
   (config) => {
+    // Obtener el token del localStorage
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const { token } = JSON.parse(userData);
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     // Agregar timestamp para evitar caché
     if (config.method === 'get') {
       config.params = { ...config.params, _t: Date.now() };
@@ -31,7 +37,6 @@ API.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('❌ Error en la configuración de la petición:', error);
     return Promise.reject(error);
   }
 );
@@ -45,14 +50,16 @@ API.interceptors.response.use(
     }
 
     if (error.response?.status === 401) {
-      throw new Error('Su sesión ha expirado. Por favor, inicie sesión nuevamente.');
+      localStorage.removeItem('user');
+      localStorage.removeItem('idToken');
+      window.location.href = '/login';
+      return Promise.reject(new Error('Su sesión ha expirado. Por favor, inicie sesión nuevamente.'));
     }
 
     if (error.response?.status === 403) {
       throw new Error('No tiene permisos para realizar esta acción.');
     }
 
-    // Si hay un mensaje de error del servidor, usarlo
     if (error.response?.data?.message) {
       throw new Error(error.response.data.message);
     }

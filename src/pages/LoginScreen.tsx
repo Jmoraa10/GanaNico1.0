@@ -16,29 +16,27 @@ const LoginScreen: React.FC = () => {
     setLoading(true);
 
     try {
-      console.log('Intentando iniciar sesión con:', email);
       const response = await login(email, password);
-      console.log('Login exitoso, token recibido');
       
       // Guardar el usuario y el token en localStorage
-      localStorage.setItem('user', JSON.stringify({
+      const userData = {
         email: response.user.email,
-        token: response.user.token
-      }));
-      console.log('Token guardado en localStorage');
+        token: response.user.token,
+        uid: response.user.uid
+      };
+      
+      localStorage.setItem('user', JSON.stringify(userData));
       
       // Redirigir a home
       navigate('/home', { replace: true });
     } catch (err) {
-      console.error('Error detallado en login:', err);
       if (err instanceof Error) {
-        // Puedes personalizar mensajes basados en el error de Firebase/authService si es necesario
         setError(err.message || 'Credenciales inválidas o error de red.');
       } else {
         setError('Ocurrió un error desconocido.');
       }
     } finally {
-      setLoading(false); // Finalizar carga, haya éxito o error
+      setLoading(false);
     }
   };
 

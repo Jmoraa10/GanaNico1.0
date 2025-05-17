@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import '../firebaseConfig';
 import api from './api';
@@ -14,27 +13,13 @@ interface UserData {
   uid: string;
 }
 
-const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://inversiones-bonitoviento-sas.onrender.com/api',
-});
-
 // Interceptor para manejar errores de autenticación
-API.interceptors.response.use(
+api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('Error en la petición API:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message
-    });
     if (error.response?.status === 401) {
       localStorage.removeItem('user');
       localStorage.removeItem('idToken');
-      const path = window.location.pathname.toLowerCase();
-      if (path.includes('venta')) {
-        window.dispatchEvent(new Event('tokenExpired'));
-        return Promise.reject(error);
-      }
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -53,7 +38,7 @@ export const getAuthToken = async (): Promise<string> => {
 
 export const checkHealth = async (): Promise<HealthResponse> => {
   try {
-    const response = await API.get<HealthResponse>('/health');
+    const response = await api.get<HealthResponse>('/health');
     return response.data;
   } catch (error: unknown) {
     if (typeof error === 'object' && error !== null && 'isAxiosError' in error) {
@@ -85,12 +70,20 @@ export const login = async (email: string, password: string) => {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     
     // Verificamos la conexión con el backend
-    try {
-      const response = await api.get('/auth/verify');
-      return response.data;
-    } catch (error: any) {
-      throw new Error('Error al conectar con el servidor. Por favor, intente más tarde.');
+    const response = await api.get('/auth/verify');
+    
+    // Si la verificación es exitosa, retornamos los datos del usuario
+    if (response.data.authenticated) {
+      return {
+        user: {
+          email: userCredential.user.email,
+          token: token,
+          uid: userCredential.user.uid
+        }
+      };
     }
+    
+    throw new Error('Error de autenticación con el backend');
   } catch (error: any) {
     // Manejo específico de errores de Firebase
     switch (error.code) {
@@ -113,6 +106,8 @@ export const login = async (email: string, password: string) => {
 export const logout = async () => {
   try {
     await signOut(getAuth());
+    localStorage.removeItem('user');
+    localStorage.removeItem('idToken');
     delete api.defaults.headers.common['Authorization'];
     return true;
   } catch (error) {
@@ -123,12 +118,13 @@ export const logout = async () => {
 
 export const checkAuth = async () => {
   try {
+    const token = await getAuthToken();
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     const response = await api.get('/auth/verify');
-    return response.data;
+    return response.data.authenticated;
   } catch (error) {
-    console.error('Error al verificar autenticación:', error);
     return false;
   }
 };
 
-export default API;
+export default api;
