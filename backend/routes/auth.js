@@ -2,34 +2,48 @@ const express = require('express');
 const admin = require('firebase-admin');
 const router = express.Router();
 
-// Ruta para iniciar sesión
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+// Middleware para verificar el token de Firebase
+const verifyToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token no proporcionado' });
+  }
 
-  console.log('Solicitud de login recibida:', { email });
-
+  const token = authHeader.split(' ')[1];
   try {
-    // Verifica si el usuario existe en Firebase
-    const user = await admin.auth().getUserByEmail(email);
-    console.log('Usuario encontrado en Firebase:', user.uid);
-
-    // Genera un custom token para el usuario
-    const customToken = await admin.auth().createCustomToken(user.uid);
-    console.log('Custom token generado:', customToken);
-
-    // Retorna el custom token al cliente
-    res.status(200).json({ success: true, customToken });
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    req.user = decodedToken;
+    next();
   } catch (error) {
-    console.error('Error en el proceso de login:', error);
+    console.error('Error al verificar token:', error);
+    res.status(401).json({ error: 'Token inválido' });
+  }
+};
 
-    // Maneja errores específicos
-    if (error.code === 'auth/user-not-found') {
-      res.status(401).json({ success: false, message: 'Usuario no encontrado' });
-    } else if (error.code === 'auth/wrong-password') {
-      res.status(401).json({ success: false, message: 'Contraseña incorrecta' });
-    } else {
-      res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
+// Ruta para verificar el estado de autenticación
+router.get('/verify', verifyToken, (req, res) => {
+  res.json({ 
+    authenticated: true, 
+    user: {
+      uid: req.user.uid,
+      email: req.user.email
     }
+  });
+});
+
+// Ruta para obtener información del usuario
+router.get('/user', verifyToken, async (req, res) => {
+  try {
+    const user = await admin.auth().getUser(req.user.uid);
+    res.json({
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      emailVerified: user.emailVerified
+    });
+  } catch (error) {
+    console.error('Error al obtener información del usuario:', error);
+    res.status(500).json({ error: 'Error al obtener información del usuario' });
   }
 });
 

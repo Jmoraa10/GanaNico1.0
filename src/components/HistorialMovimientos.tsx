@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { getFincaById } from '../services/fincaService';
+import { getVentasByFinca } from '../services/ventaService';
 import { MovimientoGanado, MovimientoBodega, Venta } from '../types/FincaTypes';
 import { Truck, Package, DollarSign, Calendar, Info, Printer } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import { imprimirMovimiento } from '../utils/printUtils';
-import { getVentasByFinca } from '../services/ventaService';
 
 interface Props {
   fincaId: string;
@@ -37,7 +37,7 @@ const HistorialMovimientos: React.FC<Props> = ({ fincaId, movimientos, movimient
   useEffect(() => {
     async function fetchFincaNombre() {
       try {
-        const { nombre } = await (await import('../services/fincaService')).getFincaById(fincaId);
+        const { nombre } = await getFincaById(fincaId);
         setFincaNombre(nombre || '');
       } catch (e) {
         setFincaNombre('');

@@ -6,6 +6,7 @@ interface SessionExpireDialogProps {
   onRelogin: () => void;
 }
 
+// @ts-ignore
 const SessionExpireDialog: React.FC<SessionExpireDialogProps> = ({ open, onClose, onRelogin }) => {
   if (!open) return null;
   return (

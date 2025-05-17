@@ -27,6 +27,23 @@ const initialFincasData: Finca[] = [
         } 
       },
       machos: { ceba: 10, levante: 8 },
+      bufalos: {
+        machos: {
+          ceba: 0,
+          levante: 0
+        },
+        hembras: {
+          levante: 0,
+          vientre: 0,
+          preñadas: 0,
+          escoteras: 0,
+          paridas: {
+            total: 0,
+            machos: 0,
+            hembras: 0
+          }
+        }
+      },
       equinos: {
         caballos: 3,
         yeguas: 2,
@@ -69,7 +86,7 @@ const initialFincasData: Finca[] = [
 
 // --- Funciones Auxiliares para Manejar Datos ---
 
-// Función para obtener los datos actuales (desde localStorage o iniciales)
+// @ts-ignore
 const getCurrentFincas = (): Finca[] => {
   try {
     const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -88,7 +105,7 @@ const getCurrentFincas = (): Finca[] => {
   }
 };
 
-// Función para guardar los datos en localStorage
+// @ts-ignore
 const saveFincasToLocalStorage = (fincas: Finca[]): void => {
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fincas));

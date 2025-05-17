@@ -1,10 +1,6 @@
 import axios from 'axios';
-import { getAuth, signInWithCustomToken } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import '../firebaseConfig';
-
-interface LoginResponse {
-  customToken: string;
-}
 
 interface HealthResponse {
   status: string;
@@ -75,14 +71,8 @@ export const checkHealth = async (): Promise<HealthResponse> => {
 
 export const login = async (email: string, password: string): Promise<string> => {
   try {
-    const response = await axios.post<LoginResponse>(
-      'http://localhost:3000/api/auth/login',
-      { email, password }
-    );
-    const customToken = response.data.customToken;
-
     const auth = getAuth();
-    const userCredential = await signInWithCustomToken(auth, customToken);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const idToken = await userCredential.user.getIdToken();
 
     // Guardar el token y los datos del usuario
@@ -94,21 +84,13 @@ export const login = async (email: string, password: string): Promise<string> =>
     localStorage.setItem('user', JSON.stringify(userData));
 
     return idToken;
-  } catch (error: unknown) {
-    if (typeof error === 'object' && error !== null && 'isAxiosError' in error) {
-      const axiosError = error as { 
-        isAxiosError: boolean; 
-        response?: { status?: number; data?: unknown }; 
-        message: string 
-      };
-      console.error('Error en el login:', {
-        status: axiosError.response?.status,
-        data: axiosError.response?.data,
-      });
+  } catch (error: any) {
+    console.error('Error en el login:', error);
+    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+      throw new Error('Credenciales inválidas');
     } else {
-      console.error('Error desconocido en login:', error);
+      throw new Error('Error al iniciar sesión. Por favor, intente nuevamente.');
     }
-    throw new Error('Credenciales inválidas o error en el servidor');
   }
 };
 

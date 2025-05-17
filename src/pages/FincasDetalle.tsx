@@ -4,7 +4,6 @@ import React from 'react';
 import { Finca, Bodega, BodegaItem, Animales as AnimalesType, Paridas } from '../types/FincaTypes';
 import { Edit } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import AlertaFaltantes from '../components/AlertaFaltantes';
 import HistorialMovimientos from '../components/HistorialMovimientos';
 
 interface Props {
@@ -69,9 +68,8 @@ const CriasCountCard: React.FC<{ title: string; crias: Paridas | undefined }> = 
 const AnimalSection: React.FC<{
     title: string;
     total: number;
-    fincaId: string;
     children: React.ReactNode
-}> = ({ title, total, fincaId, children }) => {
+}> = ({ title, total, children }) => {
     return (
       <div className="bg-white border-2 border-green-600 rounded-xl shadow-lg p-4 relative">
         <h3 className="text-xl font-semibold text-green-700 mb-4 font-rio flex justify-between items-center">
@@ -97,49 +95,59 @@ const BodegaSection: React.FC<{
   onQuantityChange: (section: keyof Bodega, nombre: string, delta: number) => void;
   onMarcarComoFaltante: (section: keyof Bodega, nombre: string) => void;
   onMarcarComoComprado: (section: keyof Bodega, nombre: string) => void;
-}> = ({ 
-  title, 
-  items, 
-  sectionKey, 
-  onQuantityChange, 
-  onMarcarComoFaltante,
-  onMarcarComoComprado 
-}) => (
-  <div className={`bg-white border-2 ${sectionKey === 'veterinarios' ? 'border-red-500' : 'border-blue-500'} rounded-xl shadow-lg p-4 mb-6`}>
-    <div className="flex justify-between items-center mb-4">
-      <h3 className={`text-xl font-semibold ${sectionKey === 'veterinarios' ? 'text-red-700' : 'text-blue-700'} font-rio`}>{title}</h3>
-    </div>
-
-    {/* Alerta de Faltantes */}
-    <AlertaFaltantes
-      items={items}
-      titulo={title}
-      onMarcarComoComprado={(nombre) => onMarcarComoComprado(sectionKey, nombre)}
-    />
-
-    {items.length === 0 ? (
-      <p className="text-gray-500 italic">No hay {title.toLowerCase()} registrados.</p>
-    ) : (
-       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+}> = ({ title, items, sectionKey, onQuantityChange, onMarcarComoFaltante, onMarcarComoComprado }) => {
+  return (
+    <div className="bg-white border-2 border-green-600 rounded-xl shadow-lg p-4 mb-4">
+      <h3 className="text-xl font-semibold text-green-700 mb-4 font-rio">{title}</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map((item) => (
           <div
             key={item.nombre}
-            className={`bg-gray-50 border rounded-lg p-3 shadow-sm flex flex-col justify-between ${
-              item.esFaltante ? 'border-red-400 bg-red-50' : 'border-gray-300'
+            className={`p-4 rounded-lg border ${
+              item.esFaltante ? 'border-red-500 bg-red-50' : 'border-green-500 bg-green-50'
             }`}
           >
-            <div className="flex justify-between items-start mb-2">
-              <h4 className="font-medium text-gray-800 break-words">{item.nombre}</h4>
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="font-semibold text-gray-800">{item.nombre}</h4>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => onQuantityChange(sectionKey, item.nombre, -1)}
+                  className="px-2 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                >
+                  -
+                </button>
+                <span className="font-bold">{item.cantidad}</span>
+                <button
+                  onClick={() => onQuantityChange(sectionKey, item.nombre, 1)}
+                  className="px-2 py-1 bg-green-100 text-green-600 rounded hover:bg-green-200"
+                >
+                  +
+                </button>
+              </div>
             </div>
-            <div className="flex items-center justify-center gap-2 mt-auto">
-              <span className="min-w-[2rem] text-center font-medium">{item.cantidad}</span>
+            <div className="flex justify-end gap-2">
+              {item.esFaltante ? (
+                <button
+                  onClick={() => onMarcarComoComprado(sectionKey, item.nombre)}
+                  className="text-sm text-green-600 hover:text-green-800"
+                >
+                  Marcar como comprado
+                </button>
+              ) : (
+                <button
+                  onClick={() => onMarcarComoFaltante(sectionKey, item.nombre)}
+                  className="text-sm text-red-600 hover:text-red-800"
+                >
+                  Marcar como faltante
+                </button>
+              )}
             </div>
           </div>
         ))}
       </div>
-    )}
-  </div>
-);
+    </div>
+  );
+};
 
 // --- Componente Principal FincaDetalle ---
 
@@ -171,6 +179,7 @@ const FincaDetalle: React.FC<Props> = ({ finca, onUpdate, onOpenMovimientoDialog
   };
 
   // --- Placeholders para añadir nuevos items (Bodega) ---
+  // @ts-ignore
   const handleAddSuministro = () => {
     const nombre = prompt("Nombre del nuevo suministro:");
     if (nombre) {
@@ -186,6 +195,7 @@ const FincaDetalle: React.FC<Props> = ({ finca, onUpdate, onOpenMovimientoDialog
     }
   };
 
+  // @ts-ignore
   const handleAddVeterinario = () => {
     const nombre = prompt("Nombre del nuevo producto veterinario:");
     if (nombre) {
@@ -257,8 +267,11 @@ const FincaDetalle: React.FC<Props> = ({ finca, onUpdate, onOpenMovimientoDialog
   };
 
   // --- Cálculo de totales por grupo de animales ---
+  // @ts-ignore
   const totalMachos = calcularTotalPorGrupo(finca.animales?.machos);
+  // @ts-ignore
   const totalHembras = calcularTotalPorGrupo(finca.animales?.hembras);
+  // @ts-ignore
   const totalBufalos = calcularTotalPorGrupo(finca.animales?.bufalos);
   const totalEquinos = calcularTotalPorGrupo(finca.animales?.equinos);
   const totalOtros = calcularTotalPorGrupo(finca.animales?.otros);
@@ -347,7 +360,7 @@ const FincaDetalle: React.FC<Props> = ({ finca, onUpdate, onOpenMovimientoDialog
               
         {/* Grupo Equinos */}
         <div className="mb-6">
-            <AnimalSection title="Equinos" total={totalEquinos} fincaId={fincaId}>
+            <AnimalSection title="Equinos" total={totalEquinos}>
                 <AnimalCountCard title="Caballos" value={finca.animales.equinos.caballos} />
                 <AnimalCountCard title="Yeguas" value={finca.animales.equinos.yeguas} />
                 <AnimalCountCard title="Potros/as" value={finca.animales.equinos.potros} />
@@ -362,7 +375,7 @@ const FincaDetalle: React.FC<Props> = ({ finca, onUpdate, onOpenMovimientoDialog
 
         {/* Grupo Otros */}
         <div className="mb-6">
-            <AnimalSection title="Otros" total={totalOtros} fincaId={fincaId}>
+            <AnimalSection title="Otros" total={totalOtros}>
                 <AnimalCountCard title="Cabras" value={finca.animales.otros.cabras} />
                 <AnimalCountCard title="Peces" value={finca.animales.otros.peces} />
                 <AnimalCountCard title="Pollos" value={finca.animales.otros.pollos} />

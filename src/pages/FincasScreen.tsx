@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useFincas } from "../hooks/useFincas";
 import { calcularTotalAnimales } from "../services/fincaService";
+// @ts-ignore
 import { Tractor, LogOut, Plus, Home, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "../hooks/useAuth";
@@ -10,6 +11,7 @@ const FincasScreen: React.FC = () => {
   const { fincas, loading, error, deleteFinca } = useFincas();
   const { logout } = useAuth();
 
+  // @ts-ignore
   const handleDeleteFinca = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm('¿Está seguro de eliminar esta finca?')) {

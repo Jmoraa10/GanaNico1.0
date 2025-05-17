@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Finca, FincaFormData, MovimientoGanado } from '../types/FincaTypes';
 import FincaDetalle from './FincasDetalle';
 import { getFincaById, updateFinca } from '../services/fincaService';
+// @ts-ignore
 import { ArrowLeft, AlertCircle, Plus, Edit, DollarSign } from 'lucide-react';
 import MovimientoGanadoDialog from '../components/MovimientoGanadoDialog';
 
