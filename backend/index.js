@@ -112,7 +112,7 @@ app.use((req, res, next) => {
 
   // Manejar preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('🔄 Procesando preflight request');
+    console.log('🔄 Procesando preflight request para:', req.path);
     return res.status(204).end();
   }
 
@@ -187,6 +187,18 @@ app.get('/api/health', (req, res) => {
       allowedDomains
     }
   });
+});
+
+// Middleware específico para rutas de autenticación
+app.use('/api/auth', (req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token, Accept');
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  next();
 });
 
 // Rutas de la API
