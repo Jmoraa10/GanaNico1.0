@@ -12,39 +12,61 @@ const API = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true,
-  timeout: 10000 // 10 segundos de timeout
+  timeout: 15000, // 15 segundos de timeout
+  validateStatus: (status) => status >= 200 && status < 500 // Aceptar todos los status codes excepto errores del servidor
 });
 
-// Interceptor para manejar errores
-API.interceptors.response.use(
-  (response) => response,
+// Interceptor para requests
+API.interceptors.request.use(
+  (config) => {
+    // Agregar timestamp para evitar caché
+    if (config.method === 'get') {
+      config.params = { ...config.params, _t: Date.now() };
+    }
+    return config;
+  },
   (error) => {
-    if (error.code === 'ERR_NETWORK') {
-      console.error('Error de red al conectar con el backend:', {
-        url: error.config?.url,
-        method: error.config?.method,
-        baseURL: error.config?.baseURL
-      });
-      throw new Error('No se pudo conectar con el servidor. Por favor, verifique su conexión a internet.');
-    }
-
-    if (error.response?.status === 401) {
-      console.error('Error de autenticación:', error.response.data);
-      throw new Error('Su sesión ha expirado. Por favor, inicie sesión nuevamente.');
-    }
-
-    console.error('Error en la petición API:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
-      url: error.config?.url
-    });
-
+    console.error('Error en la configuración de la petición:', error);
     return Promise.reject(error);
   }
 );
 
-// Ejemplo de función para probar la conectividad
+// Interceptor para responses
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Log detallado del error
+    console.error('Error en la petición API:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+      headers: error.config?.headers
+    });
+
+    if (error.code === 'ERR_NETWORK') {
+      throw new Error('No se pudo conectar con el servidor. Por favor, verifique su conexión a internet.');
+    }
+
+    if (error.response?.status === 401) {
+      throw new Error('Su sesión ha expirado. Por favor, inicie sesión nuevamente.');
+    }
+
+    if (error.response?.status === 403) {
+      throw new Error('No tiene permisos para realizar esta acción.');
+    }
+
+    // Si hay un mensaje de error del servidor, usarlo
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+
+    throw new Error('Error al procesar la solicitud. Por favor, intente nuevamente.');
+  }
+);
+
+// Función para probar la conectividad
 export const checkHealth = async (): Promise<HealthResponse> => {
   try {
     const response = await API.get<HealthResponse>('/health');

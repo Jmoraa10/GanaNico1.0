@@ -73,14 +73,46 @@ const allowedDomains = [
   'https://inversiones-bonitoviento-sas.onrender.com'
 ];
 
+// Middleware para CORS
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Permitir solicitudes sin origen (como las de Postman)
+  if (!origin) {
+    return next();
+  }
+
+  // Verificar si el origen está en la lista de dominios permitidos
+  const isAllowed = allowedDomains.some(domain => 
+    origin === domain || 
+    origin.startsWith(domain) || 
+    origin.includes('localhost:') || 
+    origin.includes('127.0.0.1:')
+  );
+
+  if (isAllowed) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400'); // 24 horas
+  }
+
+  // Manejar preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
+  next();
+});
+
+// Configuración de CORS usando el middleware de cors
 app.use(cors({
   origin: function (origin, callback) {
-    // Permitir solicitudes sin origen (como las de Postman)
     if (!origin) {
       return callback(null, true);
     }
 
-    // Verificar si el origen está en la lista de dominios permitidos
     const isAllowed = allowedDomains.some(domain => 
       origin === domain || 
       origin.startsWith(domain) || 
@@ -102,15 +134,9 @@ app.use(cors({
   optionsSuccessStatus: 204
 }));
 
-// Agregar headers CORS manualmente para asegurar que estén presentes
+// Middleware para logging de requests
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin && allowedDomains.some(domain => origin.startsWith(domain))) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Firebase-Token');
-    res.header('Access-Control-Allow-Credentials', 'true');
-  }
+  console.log(`📨 ${req.method} ${req.path} - Origin: ${req.headers.origin}`);
   next();
 });
 
