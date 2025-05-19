@@ -15,7 +15,8 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "https://inversiones-bonitoviento-sas.web.app/",
+  "scope": "/",
   "display": "standalone",
   "theme_color": "#ffffff",
   "background_color": "#ffffff",
