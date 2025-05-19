@@ -1,45 +1,45 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    open: true, // 👈 esto abre el navegador automáticamente
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+// https://vitejs.dev/config/
+export default defineConfig(({ mode }) => {
+  // Cargar variables de entorno basadas en el modo
+  const env = loadEnv(mode, process.cwd(), '')
+  
+  return {
+    plugins: [react()],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
     },
-  },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'vendor': [
-            'react',
-            'react-dom',
-            'react-router-dom',
-            '@headlessui/react',
-            'framer-motion',
-            'lucide-react',
-            'html2canvas',
-            'dompurify'
-          ],
-          'services': [
-            './src/services/fincaService',
-            './src/services/ventaService',
-            './src/services/authService'
-          ],
-          'components': [
-            './src/components/HistorialMovimientos',
-            './src/components/MovimientoGanadoDialog',
-            './src/components/AlertaFaltantes'
-          ]
-        }
-      }
+    define: {
+      'process.env': env
     },
-    chunkSizeWarningLimit: 1000
+    build: {
+      target: 'es2015',
+      outDir: 'dist',
+      assetsDir: 'assets',
+      sourcemap: mode === 'development',
+      minify: mode === 'production',
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom', 'react-router-dom'],
+            firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          },
+        },
+      },
+    },
+    server: {
+      host: true,
+      port: 5173,
+      strictPort: true,
+      hmr: {
+        protocol: 'ws',
+        host: 'localhost',
+      },
+    },
   }
 })

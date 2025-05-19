@@ -16,46 +16,16 @@ const LoginScreen: React.FC = () => {
     setLoading(true);
 
     try {
-      console.log('📝 Iniciando proceso de login con email:', email);
       const response = await login(email, password);
-      console.log('✅ Login exitoso, respuesta:', response);
       
       // Asegurarnos de que tenemos todos los datos necesarios
       if (!response.user || !response.user.token) {
-        console.error('❌ Datos de usuario incompletos:', response);
         throw new Error('Error en la respuesta del servidor');
       }
 
-      // Guardar el usuario y el token en localStorage
-      const userData = {
-        email: response.user.email,
-        token: response.user.token,
-        uid: response.user.uid
-      };
-      console.log('📦 Datos a guardar en localStorage:', userData);
-
-      // Limpiar localStorage antes de guardar nuevos datos
-      console.log('🧹 Limpiando localStorage...');
-      localStorage.clear();
-      
-      // Guardar los datos en localStorage
-      console.log('💾 Guardando datos en localStorage...');
-      localStorage.setItem('user', JSON.stringify(userData));
-      
-      // Verificar que los datos se guardaron correctamente
-      const storedData = localStorage.getItem('user');
-      console.log('🔍 Datos guardados en localStorage:', storedData);
-      
-      if (!storedData) {
-        console.error('❌ Error: No se pudieron guardar los datos en localStorage');
-        throw new Error('Error al guardar los datos de sesión');
-      }
-
       // Redirigir a home
-      console.log('🚀 Redirigiendo a /home...');
       navigate('/home', { replace: true });
     } catch (err) {
-      console.error('❌ Error en el proceso de login:', err);
       if (err instanceof Error) {
         setError(err.message || 'Credenciales inválidas o error de red.');
       } else {

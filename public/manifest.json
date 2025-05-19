@@ -1,0 +1,35 @@
+{
+  "short_name": "Bonito Viento",
+  "name": "Inversiones Bonito Viento",
+  "icons": [
+    {
+      "src": "logo192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "orientation": "portrait",
+  "description": "Sistema de gestión para Inversiones Bonito Viento",
+  "dir": "ltr",
+  "lang": "es",
+  "prefer_related_applications": false,
+  "categories": ["business", "finance"],
+  "screenshots": [
+    {
+      "src": "screenshot1.png",
+      "sizes": "1280x720",
+      "type": "image/png"
+    }
+  ]
+} 
