@@ -14,6 +14,7 @@ import MovimientosBodega from '../pages/MovimientosBodega';
 import VentaGanado from '../pages/VentaGanado';
 import VentaReporte from '../pages/VentaReporte';
 import UnderConstruction from '../pages/UnderConstruction';
+import { SubastasScreen, SubastaDetalleScreen } from '../pages/Subastas';
 
 const isAuthenticated = () => {
   const user = localStorage.getItem('user');
@@ -122,6 +123,22 @@ const AppRoutes: React.FC = () => {
         element={
           <PrivateRoute>
             <Dashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/subastas"
+        element={
+          <PrivateRoute>
+            <SubastasScreen />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/subastas/:id"
+        element={
+          <PrivateRoute>
+            <SubastaDetalleScreen />
           </PrivateRoute>
         }
       />

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Tractor, Warehouse, BarChart, LogOut } from "lucide-react";
+import { Tractor, Hammer, BarChart, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function HomeScreen() {
@@ -13,10 +13,10 @@ export default function HomeScreen() {
       description: "HERMOSA EMPRESA FAMILIAR",
     },
     {
-      title: "Gestión de Bodegas",
-      icon: <Warehouse size={40} className="text-white" />,
-      path: "/under-construction",
-      description: "Control de inventarios y almacenes",
+      title: "SUBASTAS",
+      icon: <Hammer size={40} className="text-white" />,
+      path: "/subastas",
+      description: "Gestión de subastas de ganado",
     },
     {
       title: "Consolidado de Datos",
@@ -28,7 +28,7 @@ export default function HomeScreen() {
 
   return (
     <div
-      className="h-screen w-full bg-cover bg-center flex flex-col justify-between"
+      className="h-screen w-full bg-cover bg-center flex flex-col justify-between font-rio"
       style={{
         backgroundImage: "url('/homescreen.png')",
         backgroundBlendMode: "overlay",

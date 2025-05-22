@@ -42,7 +42,7 @@ const FincasScreen: React.FC = () => {
   }
 
   return (
-    <div className="relative w-full min-h-screen overflow-hidden">
+    <div className="relative w-full min-h-screen overflow-hidden font-rio">
       {/* Imagen de fondo con posicionamiento fijo */}
       <div 
         className="fixed top-0 left-0 w-full h-full bg-cover bg-center bg-no-repeat opacity-90 z-0"

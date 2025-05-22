@@ -370,7 +370,7 @@ const FincasForm: React.FC = () => {
       />
 
       {/* Contenido principal */}
-      <div className="relative z-10 w-full min-h-screen p-4 md:p-6">
+      <div className="relative z-10 w-full min-h-screen p-4 md:p-6 font-rio">
         <div className="max-w-4xl mx-auto bg-white/90 backdrop-blur-sm rounded-lg shadow-xl p-6">
         <h2 className="text-2xl font-bold mb-6">
           {isEditing ? 'Editar Finca' : 'Nueva Finca'}

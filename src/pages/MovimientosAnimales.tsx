@@ -31,7 +31,7 @@ const MovimientosAnimales: React.FC = () => {
   }
   const movimientosAnimales = finca.movimientosGanado || [];
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
+    <div className="min-h-screen bg-gray-100 p-6 font-rio">
       <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-lg p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-green-800">Movimientos de Animales</h1>

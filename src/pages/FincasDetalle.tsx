@@ -279,7 +279,7 @@ const FincaDetalle: React.FC<Props> = ({ finca, onUpdate, onOpenMovimientoDialog
 
   // --- Renderizado ---
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 font-rio">
 
       {/* Sección de Información General */}
       <div className="bg-white rounded-lg shadow p-4 border border-gray-200">

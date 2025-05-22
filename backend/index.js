@@ -10,6 +10,7 @@ const fincaRoutes = require('./routes/fincas');
 const movimientoRoutes = require('./routes/movimientos');
 const dashboardRoutes = require('./routes/dashboard');
 const ventaRoutes = require('./routes/ventaRoutes');
+const subastaRoutes = require('./routes/subastas');
 const { authenticate } = require('./middleware/auth');
 
 // Verificación crítica de variables
@@ -160,6 +161,7 @@ app.use('/api/fincas', authenticate, fincaRoutes);
 app.use('/api/movimientos', authenticate, movimientoRoutes);
 app.use('/api/dashboard', authenticate, dashboardRoutes);
 app.use('/api/ventas', authenticate, ventaRoutes);
+app.use('/api/subastas', subastaRoutes);
 
 // Manejo de errores
 app.use((err, req, res, next) => {
