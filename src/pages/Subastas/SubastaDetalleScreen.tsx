@@ -85,41 +85,163 @@ const Linea = ({ linea, onChange, onRemove, tipo }: {
 }) => {
   const { pesoProm, valorTotal, valorProm, valorTotalMov } = calcularLinea(linea);
   const isVacasParidas = linea.tipo === 'VP';
+
+  const handleInputChange = (field: keyof LineaType, value: string | number) => {
+    const newLinea = { ...linea };
+    if (field === 'cantidad' || field === 'pesoTotal' || field === 'valorBase' || field === 'porcentajeSubasta') {
+      newLinea[field] = Number(value) || 0;
+    } else {
+      newLinea[field] = value as any;
+    }
+    onChange(newLinea);
+  };
+
   return (
     <div className="bg-white rounded-xl shadow p-4 mb-4 border border-gray-200 w-full">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 w-full">
-        <input type="date" className="border rounded px-2 py-1 w-full" value={linea.fecha} onChange={e => onChange({ ...linea, fecha: e.target.value })} />
-        <input type="text" className="border rounded px-2 py-1 w-full" placeholder="Subasta N°" value={linea.subastaNumero} onChange={e => onChange({ ...linea, subastaNumero: e.target.value })} />
+        <input 
+          type="date" 
+          className="border rounded px-2 py-1 w-full" 
+          value={linea.fecha} 
+          onChange={e => handleInputChange('fecha', e.target.value)} 
+        />
+        <input 
+          type="text" 
+          className="border rounded px-2 py-1 w-full" 
+          placeholder="Subasta N°" 
+          value={linea.subastaNumero} 
+          onChange={e => handleInputChange('subastaNumero', e.target.value)} 
+        />
         <div className="flex flex-col">
-          <select className="border rounded px-2 py-1 w-full" value={linea.grupo} onChange={e => onChange({ ...linea, grupo: e.target.value as 'Bovinos' | 'Bufalinos', tipo: '' })}>
+          <select 
+            className="border rounded px-2 py-1 w-full" 
+            value={linea.grupo} 
+            onChange={e => handleInputChange('grupo', e.target.value as 'Bovinos' | 'Bufalinos')}
+          >
             {TIPO_OPCIONES.map(opt => <option key={opt.grupo} value={opt.grupo}>{opt.grupo}</option>)}
           </select>
           <div className="relative mt-1">
-            <select className="border rounded px-2 py-1 w-full" value={linea.tipo} onChange={e => onChange({ ...linea, tipo: e.target.value })}>
+            <select 
+              className="border rounded px-2 py-1 w-full" 
+              value={linea.tipo} 
+              onChange={e => handleInputChange('tipo', e.target.value)}
+            >
               <option value="">Tipo</option>
-              {TIPO_OPCIONES.find(g => g.grupo === linea.grupo)?.opciones.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              {TIPO_OPCIONES.find(g => g.grupo === linea.grupo)?.opciones.map(opt => 
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              )}
             </select>
             <ChevronDown className="absolute right-2 top-2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
         </div>
         {isVacasParidas && (
           <div className="flex flex-row gap-2 items-center">
-            <input type="number" min="0" className="border rounded px-2 py-1 w-full" placeholder="Crias M" value={linea.tipoDetalle.criasMacho} onChange={e => onChange({ ...linea, tipoDetalle: { ...linea.tipoDetalle, criasMacho: Number(e.target.value) } })} />
-            <input type="number" min="0" className="border rounded px-2 py-1 w-full" placeholder="Crias H" value={linea.tipoDetalle.criasHembra} onChange={e => onChange({ ...linea, tipoDetalle: { ...linea.tipoDetalle, criasHembra: Number(e.target.value) } })} />
+            <input 
+              type="number" 
+              min="0" 
+              className="border rounded px-2 py-1 w-full" 
+              placeholder="Crias M" 
+              value={linea.tipoDetalle.criasMacho} 
+              onChange={e => onChange({ 
+                ...linea, 
+                tipoDetalle: { 
+                  ...linea.tipoDetalle, 
+                  criasMacho: Number(e.target.value) || 0 
+                } 
+              })} 
+            />
+            <input 
+              type="number" 
+              min="0" 
+              className="border rounded px-2 py-1 w-full" 
+              placeholder="Crias H" 
+              value={linea.tipoDetalle.criasHembra} 
+              onChange={e => onChange({ 
+                ...linea, 
+                tipoDetalle: { 
+                  ...linea.tipoDetalle, 
+                  criasHembra: Number(e.target.value) || 0 
+                } 
+              })} 
+            />
           </div>
         )}
-        <input type="number" min="0" className="border rounded px-2 py-1 w-full" placeholder="Cantidad" value={linea.cantidad === 0 ? '' : linea.cantidad} onChange={e => onChange({ ...linea, cantidad: Number(e.target.value) })} />
-        <input type="number" min="0" className="border rounded px-2 py-1 w-full" placeholder="Peso total" value={linea.pesoTotal === 0 ? '' : linea.pesoTotal} onChange={e => onChange({ ...linea, pesoTotal: Number(e.target.value) })} />
-        <input type="number" className="border rounded px-2 py-1 w-full bg-gray-100" placeholder="P.Prom" value={pesoProm ? pesoProm.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''} readOnly />
-        <input type="number" min="0" className="border rounded px-2 py-1 w-full" placeholder="Valor de base" value={linea.valorBase === 0 ? '' : linea.valorBase} onChange={e => onChange({ ...linea, valorBase: Number(e.target.value) })} />
-        <input type="number" className="border rounded px-2 py-1 w-full bg-gray-100" placeholder="V.Total" value={valorTotal ? valorTotal.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''} readOnly />
-        <input type="number" className="border rounded px-2 py-1 w-full bg-gray-100" placeholder="V.Prom" value={valorProm ? valorProm.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''} readOnly />
-        <input type="number" min="0" className="border rounded px-2 py-1 w-full" placeholder="Valor Cobro Subasta" value={linea.porcentajeSubasta === 0 ? '' : linea.porcentajeSubasta} onChange={e => onChange({ ...linea, porcentajeSubasta: Number(e.target.value) })} />
-        <input type="number" className="border rounded px-2 py-1 w-full bg-gray-100" placeholder="Valor Total" value={valorTotalMov ? valorTotalMov.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''} readOnly />
+        <input 
+          type="number" 
+          min="0" 
+          className="border rounded px-2 py-1 w-full" 
+          placeholder="Cantidad" 
+          value={linea.cantidad || ''} 
+          onChange={e => handleInputChange('cantidad', e.target.value)} 
+        />
+        <input 
+          type="number" 
+          min="0" 
+          className="border rounded px-2 py-1 w-full" 
+          placeholder="Peso total" 
+          value={linea.pesoTotal || ''} 
+          onChange={e => handleInputChange('pesoTotal', e.target.value)} 
+        />
+        <input 
+          type="text" 
+          className="border rounded px-2 py-1 w-full bg-gray-100" 
+          placeholder="P.Prom" 
+          value={pesoProm ? pesoProm.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''} 
+          readOnly 
+        />
+        <input 
+          type="number" 
+          min="0" 
+          className="border rounded px-2 py-1 w-full" 
+          placeholder="Valor de base" 
+          value={linea.valorBase || ''} 
+          onChange={e => handleInputChange('valorBase', e.target.value)} 
+        />
+        <input 
+          type="text" 
+          className="border rounded px-2 py-1 w-full bg-gray-100" 
+          placeholder="V.Total" 
+          value={valorTotal ? valorTotal.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''} 
+          readOnly 
+        />
+        <input 
+          type="text" 
+          className="border rounded px-2 py-1 w-full bg-gray-100" 
+          placeholder="V.Prom" 
+          value={valorProm ? valorProm.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''} 
+          readOnly 
+        />
+        <input 
+          type="number" 
+          min="0" 
+          className="border rounded px-2 py-1 w-full" 
+          placeholder="Valor Cobro Subasta" 
+          value={linea.porcentajeSubasta || ''} 
+          onChange={e => handleInputChange('porcentajeSubasta', e.target.value)} 
+        />
+        <input 
+          type="text" 
+          className="border rounded px-2 py-1 w-full bg-gray-100" 
+          placeholder="Valor Total" 
+          value={valorTotalMov ? valorTotalMov.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''} 
+          readOnly 
+        />
         {tipo === 'venta' ? (
-          <input type="text" className="border rounded px-2 py-1 w-full" placeholder="Procedencia" value={linea.procedencia} onChange={e => onChange({ ...linea, procedencia: e.target.value })} />
+          <input 
+            type="text" 
+            className="border rounded px-2 py-1 w-full" 
+            placeholder="Procedencia" 
+            value={linea.procedencia} 
+            onChange={e => handleInputChange('procedencia', e.target.value)} 
+          />
         ) : (
-          <input type="text" className="border rounded px-2 py-1 w-full" placeholder="Destino" value={linea.destino} onChange={e => onChange({ ...linea, destino: e.target.value })} />
+          <input 
+            type="text" 
+            className="border rounded px-2 py-1 w-full" 
+            placeholder="Destino" 
+            value={linea.destino} 
+            onChange={e => handleInputChange('destino', e.target.value)} 
+          />
         )}
       </div>
       <div className="flex justify-end mt-2">
