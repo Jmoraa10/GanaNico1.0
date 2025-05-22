@@ -108,14 +108,14 @@ const Linea = ({ linea, onChange, onRemove, tipo }: {
             <input type="number" min="0" className="border rounded px-2 py-1 w-full" placeholder="Crias H" value={linea.tipoDetalle.criasHembra} onChange={e => onChange({ ...linea, tipoDetalle: { ...linea.tipoDetalle, criasHembra: Number(e.target.value) } })} />
           </div>
         )}
-        <input type="number" min="0" className="border rounded px-2 py-1 w-full" placeholder="Cant." value={linea.cantidad} onChange={e => onChange({ ...linea, cantidad: Number(e.target.value) })} />
-        <input type="number" min="0" className="border rounded px-2 py-1 w-full" placeholder="P.Total" value={linea.pesoTotal} onChange={e => onChange({ ...linea, pesoTotal: Number(e.target.value) })} />
-        <input type="number" className="border rounded px-2 py-1 w-full bg-gray-100" placeholder="P.Prom" value={pesoProm.toFixed(2)} readOnly />
-        <input type="number" min="0" className="border rounded px-2 py-1 w-full" placeholder="V.Base" value={linea.valorBase} onChange={e => onChange({ ...linea, valorBase: Number(e.target.value) })} />
-        <input type="number" className="border rounded px-2 py-1 w-full bg-gray-100" placeholder="V.Total" value={valorTotal.toFixed(2)} readOnly />
-        <input type="number" className="border rounded px-2 py-1 w-full bg-gray-100" placeholder="V.Prom" value={valorProm.toFixed(2)} readOnly />
-        <input type="number" min="0" className="border rounded px-2 py-1 w-full" placeholder="Valor Cobro Subasta" value={linea.porcentajeSubasta} onChange={e => onChange({ ...linea, porcentajeSubasta: Number(e.target.value) })} />
-        <input type="number" className="border rounded px-2 py-1 w-full bg-gray-100" placeholder="Valor Total" value={valorTotalMov.toFixed(2)} readOnly />
+        <input type="number" min="0" className="border rounded px-2 py-1 w-full" placeholder="Cantidad" value={linea.cantidad === 0 ? '' : linea.cantidad} onChange={e => onChange({ ...linea, cantidad: Number(e.target.value) })} />
+        <input type="number" min="0" className="border rounded px-2 py-1 w-full" placeholder="Peso total" value={linea.pesoTotal === 0 ? '' : linea.pesoTotal} onChange={e => onChange({ ...linea, pesoTotal: Number(e.target.value) })} />
+        <input type="number" className="border rounded px-2 py-1 w-full bg-gray-100" placeholder="P.Prom" value={pesoProm ? pesoProm.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''} readOnly />
+        <input type="number" min="0" className="border rounded px-2 py-1 w-full" placeholder="Valor de base" value={linea.valorBase === 0 ? '' : linea.valorBase} onChange={e => onChange({ ...linea, valorBase: Number(e.target.value) })} />
+        <input type="number" className="border rounded px-2 py-1 w-full bg-gray-100" placeholder="V.Total" value={valorTotal ? valorTotal.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''} readOnly />
+        <input type="number" className="border rounded px-2 py-1 w-full bg-gray-100" placeholder="V.Prom" value={valorProm ? valorProm.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''} readOnly />
+        <input type="number" min="0" className="border rounded px-2 py-1 w-full" placeholder="Valor Cobro Subasta" value={linea.porcentajeSubasta === 0 ? '' : linea.porcentajeSubasta} onChange={e => onChange({ ...linea, porcentajeSubasta: Number(e.target.value) })} />
+        <input type="number" className="border rounded px-2 py-1 w-full bg-gray-100" placeholder="Valor Total" value={valorTotalMov ? valorTotalMov.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''} readOnly />
         {tipo === 'venta' ? (
           <input type="text" className="border rounded px-2 py-1 w-full" placeholder="Procedencia" value={linea.procedencia} onChange={e => onChange({ ...linea, procedencia: e.target.value })} />
         ) : (
@@ -374,11 +374,11 @@ const SubastaDetalleScreen: React.FC = () => {
               ` : ''}
               <div class="info-row">
                 <span class="info-label">Cantidad:</span>
-                <span>${movimiento.cantidad}</span>
+                <span>${movimiento.cantidad.toLocaleString('es-CO')}</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Peso Total:</span>
-                <span>${movimiento.pesoTotal}</span>
+                <span>${movimiento.pesoTotal.toLocaleString('es-CO')}</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Peso Promedio:</span>
@@ -386,11 +386,11 @@ const SubastaDetalleScreen: React.FC = () => {
               </div>
               <div class="info-row">
                 <span class="info-label">Valor Base:</span>
-                <span>${movimiento.valorBase}</span>
+                <span>${movimiento.valorBase.toLocaleString('es-CO')}</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Valor Cobro Subasta:</span>
-                <span>${movimiento.porcentajeSubasta}</span>
+                <span>${movimiento.porcentajeSubasta.toLocaleString('es-CO')}</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Valor Total:</span>
@@ -407,11 +407,11 @@ const SubastaDetalleScreen: React.FC = () => {
               ${movimiento.tipo === 'VP' ? `
                 <div class="info-row">
                   <span class="info-label">Crías Macho:</span>
-                  <span>${movimiento.tipoDetalle?.criasMacho || 0}</span>
+                  <span>${movimiento.tipoDetalle?.criasMacho.toLocaleString('es-CO') || 0}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Crías Hembra:</span>
-                  <span>${movimiento.tipoDetalle?.criasHembra || 0}</span>
+                  <span>${movimiento.tipoDetalle?.criasHembra.toLocaleString('es-CO') || 0}</span>
                 </div>
               ` : ''}
             `}
@@ -618,11 +618,11 @@ const SubastaDetalleScreen: React.FC = () => {
                       ) : (
                         <>
                           <span>Subasta N°: <b>{mov.subastaNumero}</b></span>
-                          <span>Cant: <b>{mov.cantidad}</b></span>
-                          <span>P.Total: <b>{mov.pesoTotal}</b></span>
-                          <span>V.Base: <b>{mov.valorBase}</b></span>
-                          <span>Valor Cobro Subasta: <b>{mov.porcentajeSubasta}</b></span>
-                          <span>Valor Total: <b>{calcularLinea(mov).valorTotalMov.toLocaleString('es-CO')}</b></span>
+                          <span>Cant: <b>{mov.cantidad.toLocaleString('es-CO')}</b></span>
+                          <span>P.Total: <b>{mov.pesoTotal.toLocaleString('es-CO')}</b></span>
+                          <span>V.Base: <b>{mov.valorBase.toLocaleString('es-CO')}</b></span>
+                          <span>Valor Cobro Subasta: <b>{mov.porcentajeSubasta.toLocaleString('es-CO')}</b></span>
+                          <span>Valor Total: <b>{calcularLinea(mov).valorTotalMov.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
                           {mov.tipoMovimiento === 'venta' && mov.procedencia && (
                             <span>Procedencia: <b>{mov.procedencia}</b></span>
                           )}
@@ -682,18 +682,18 @@ const SubastaDetalleScreen: React.FC = () => {
                     {detalleMovimiento.tipoMovimiento === 'compra' && (
                       <div><b>Destino:</b> {detalleMovimiento.destino}</div>
                     )}
-                    <div><b>Cantidad:</b> {detalleMovimiento.cantidad}</div>
-                    <div><b>Peso Total:</b> {detalleMovimiento.pesoTotal}</div>
+                    <div><b>Cantidad:</b> {detalleMovimiento.cantidad.toLocaleString('es-CO')}</div>
+                    <div><b>Peso Total:</b> {detalleMovimiento.pesoTotal.toLocaleString('es-CO')}</div>
                     <div><b>Peso Promedio:</b> {calcularLinea(detalleMovimiento).pesoProm.toLocaleString('es-CO')}</div>
-                    <div><b>Valor Base:</b> {detalleMovimiento.valorBase}</div>
-                    <div><b>Valor Cobro Subasta:</b> {detalleMovimiento.porcentajeSubasta}</div>
+                    <div><b>Valor Base:</b> {detalleMovimiento.valorBase.toLocaleString('es-CO')}</div>
+                    <div><b>Valor Cobro Subasta:</b> {detalleMovimiento.porcentajeSubasta.toLocaleString('es-CO')}</div>
                     <div><b>Valor Total:</b> {calcularLinea(detalleMovimiento).valorTotal.toLocaleString('es-CO')}</div>
                     <div><b>Valor Promedio:</b> {calcularLinea(detalleMovimiento).valorProm.toLocaleString('es-CO')}</div>
-                    <div><b>Valor Total Movimiento:</b> {calcularLinea(detalleMovimiento).valorTotalMov.toLocaleString('es-CO')}</div>
+                    <div><b>Valor Total Movimiento:</b> {calcularLinea(detalleMovimiento).valorTotalMov.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                     {detalleMovimiento.tipo === 'VP' && (
                       <div>
-                        <b>Crías Macho:</b> {detalleMovimiento.tipoDetalle?.criasMacho || 0} <br />
-                        <b>Crías Hembra:</b> {detalleMovimiento.tipoDetalle?.criasHembra || 0}
+                        <b>Crías Macho:</b> {detalleMovimiento.tipoDetalle?.criasMacho.toLocaleString('es-CO') || 0} <br />
+                        <b>Crías Hembra:</b> {detalleMovimiento.tipoDetalle?.criasHembra.toLocaleString('es-CO') || 0}
                       </div>
                     )}
                   </>
