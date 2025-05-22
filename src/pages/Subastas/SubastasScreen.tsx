@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, LogOut, PlusCircle, MapPin } from 'lucide-react';
+import { Home, LogOut, PlusCircle, MapPin, Trash2 } from 'lucide-react';
 import { subastaService, Subasta } from '../../services/subastaService';
 
 const SubastasScreen: React.FC = () => {
@@ -9,6 +9,7 @@ const SubastasScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [subastaToDelete, setSubastaToDelete] = useState<Subasta | null>(null);
   const [newSubasta, setNewSubasta] = useState({
     nombre: '',
     ubicacion: ''
@@ -43,6 +44,19 @@ const SubastasScreen: React.FC = () => {
       navigate(`/subastas/${subasta._id}`);
     } catch (err) {
       setError('Error al crear la subasta');
+      console.error('Error:', err);
+    }
+  };
+
+  const handleDeleteSubasta = async () => {
+    if (!subastaToDelete?._id) return;
+    
+    try {
+      await subastaService.deleteSubasta(subastaToDelete._id);
+      setSubastas(subastas.filter(s => s._id !== subastaToDelete._id));
+      setSubastaToDelete(null);
+    } catch (err) {
+      setError('Error al eliminar la subasta');
       console.error('Error:', err);
     }
   };
@@ -131,20 +145,61 @@ const SubastasScreen: React.FC = () => {
           </div>
         )}
 
+        {/* Diálogo de confirmación para eliminar */}
+        {subastaToDelete && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
+              <h2 className="text-2xl font-bold mb-4 text-red-800">Confirmar Eliminación</h2>
+              <p className="text-gray-600 mb-6">
+                ¿Estás seguro de que deseas eliminar la subasta "{subastaToDelete.nombre}"? Esta acción no se puede deshacer.
+              </p>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setSubastaToDelete(null)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteSubasta}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {subastas.map((subasta) => (
             <div
               key={subasta._id}
-              className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 hover:shadow-xl transition-shadow cursor-pointer"
-              onClick={() => navigate(`/subastas/${subasta._id}`)}
+              className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 hover:shadow-xl transition-shadow relative group"
             >
-              <h3 className="text-xl font-bold text-blue-900 mb-2">{subasta.nombre}</h3>
-              <div className="flex items-center gap-2 text-gray-600">
-                <MapPin size={16} />
-                <span>{subasta.ubicacion}</span>
+              <div 
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSubastaToDelete(subasta);
+                }}
+              >
+                <button className="text-gray-400 hover:text-red-600 p-1">
+                  <Trash2 size={16} />
+                </button>
               </div>
-              <div className="mt-4 text-sm text-gray-500">
-                Creada: {new Date(subasta.createdAt || '').toLocaleDateString()}
+              <div
+                className="cursor-pointer"
+                onClick={() => navigate(`/subastas/${subasta._id}`)}
+              >
+                <h3 className="text-xl font-bold text-blue-900 mb-2">{subasta.nombre}</h3>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <MapPin size={16} />
+                  <span>{subasta.ubicacion}</span>
+                </div>
+                <div className="mt-4 text-sm text-gray-500">
+                  Creada: {new Date(subasta.createdAt || '').toLocaleDateString()}
+                </div>
               </div>
             </div>
           ))}
