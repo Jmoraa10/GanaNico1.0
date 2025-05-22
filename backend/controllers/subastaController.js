@@ -3,7 +3,7 @@ const Subasta = require('../models/Subasta');
 // Obtener todas las subastas
 exports.getSubastas = async (req, res) => {
   try {
-    const subastas = await Subasta.find({ usuarioId: req.user.uid })
+    const subastas = await Subasta.find()
       .sort({ createdAt: -1 });
     res.status(200).json(subastas);
   } catch (error) {
