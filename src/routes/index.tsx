@@ -15,6 +15,10 @@ import VentaGanado from '../pages/VentaGanado';
 import VentaReporte from '../pages/VentaReporte';
 import UnderConstruction from '../pages/UnderConstruction';
 import { SubastasScreen, SubastaDetalleScreen } from '../pages/Subastas';
+import ConsolidadoScreen from '../pages/Consolidado/ConsolidadoScreen';
+import AnimalesConsolidadoScreen from '../pages/Consolidado/AnimalesConsolidadoScreen';
+import SubastasConsolidadoScreen from '../pages/Consolidado/SubastasConsolidadoScreen';
+import BodegasConsolidadoScreen from '../pages/Consolidado/BodegasConsolidadoScreen';
 
 const isAuthenticated = () => {
   const user = localStorage.getItem('user');
@@ -139,6 +143,38 @@ const AppRoutes: React.FC = () => {
         element={
           <PrivateRoute>
             <SubastaDetalleScreen />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/consolidado"
+        element={
+          <PrivateRoute>
+            <ConsolidadoScreen />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/consolidado/animales"
+        element={
+          <PrivateRoute>
+            <AnimalesConsolidadoScreen />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/consolidado/subastas"
+        element={
+          <PrivateRoute>
+            <SubastasConsolidadoScreen />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/consolidado/bodegas"
+        element={
+          <PrivateRoute>
+            <BodegasConsolidadoScreen />
           </PrivateRoute>
         }
       />

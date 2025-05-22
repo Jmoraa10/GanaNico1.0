@@ -21,7 +21,7 @@ export default function HomeScreen() {
     {
       title: "Consolidado de Datos",
       icon: <BarChart size={40} className="text-white" />,
-      path: "/under-construction",
+      path: "/consolidado",
       description: "Reportes y análisis completos",
     },
   ];
