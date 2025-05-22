@@ -34,8 +34,24 @@ export interface Movimiento {
 }
 
 const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  const userData = localStorage.getItem('user');
+  if (!userData) {
+    console.warn('No se encontró usuario en localStorage');
+    return {};
+  }
+  
+  try {
+    const user = JSON.parse(userData);
+    if (!user.token) {
+      console.warn('No se encontró token en los datos del usuario');
+      return {};
+    }
+    console.log('Token encontrado:', user.token.substring(0, 10) + '...');
+    return { Authorization: `Bearer ${user.token}` };
+  } catch (error) {
+    console.error('Error al parsear datos del usuario:', error);
+    return {};
+  }
 };
 
 export const subastaService = {
