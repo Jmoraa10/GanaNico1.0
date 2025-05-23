@@ -15,8 +15,7 @@ exports.getSubastas = async (req, res) => {
 exports.getSubasta = async (req, res) => {
   try {
     const subasta = await Subasta.findOne({
-      _id: req.params.id,
-      usuarioId: req.user.uid
+      _id: req.params.id
     });
     
     if (!subasta) {
@@ -48,7 +47,7 @@ exports.createSubasta = async (req, res) => {
 exports.updateSubasta = async (req, res) => {
   try {
     const subastaActualizada = await Subasta.findOneAndUpdate(
-      { _id: req.params.id, usuarioId: req.user.uid },
+      { _id: req.params.id },
       req.body,
       { new: true }
     );
@@ -67,8 +66,7 @@ exports.updateSubasta = async (req, res) => {
 exports.deleteSubasta = async (req, res) => {
   try {
     const subastaEliminada = await Subasta.findOneAndDelete({
-      _id: req.params.id,
-      usuarioId: req.user.uid
+      _id: req.params.id
     });
     
     if (!subastaEliminada) {
