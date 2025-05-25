@@ -3,6 +3,9 @@ const Evento = require('../models/Evento');
 exports.crearEvento = async (req, res) => {
   try {
     const { fecha, tipo, descripcion, lugar, detalles, detallesTexto, fechaVencimiento } = req.body;
+    if (!fecha || !tipo || !descripcion || !lugar) {
+      return res.status(400).json({ message: 'Faltan campos requeridos: fecha, tipo, descripcion, lugar' });
+    }
     const evento = new Evento({
       fecha,
       tipo,
@@ -16,7 +19,7 @@ exports.crearEvento = async (req, res) => {
     await evento.save();
     res.status(201).json(evento);
   } catch (error) {
-    res.status(500).json({ message: 'Error al crear evento', error });
+    res.status(500).json({ message: 'Error al crear evento', error: error.message, stack: error.stack });
   }
 };
 
