@@ -19,6 +19,7 @@ import ConsolidadoScreen from '../pages/Consolidado/ConsolidadoScreen';
 import AnimalesConsolidadoScreen from '../pages/Consolidado/AnimalesConsolidadoScreen';
 import SubastasConsolidadoScreen from '../pages/Consolidado/SubastasConsolidadoScreen';
 import BodegasConsolidadoScreen from '../pages/Consolidado/BodegasConsolidadoScreen';
+import AgendaScreen from '../pages/AgendaScreen';
 
 const isAuthenticated = () => {
   const user = localStorage.getItem('user');
@@ -175,6 +176,14 @@ const AppRoutes: React.FC = () => {
         element={
           <PrivateRoute>
             <BodegasConsolidadoScreen />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/agenda"
+        element={
+          <PrivateRoute>
+            <AgendaScreen />
           </PrivateRoute>
         }
       />

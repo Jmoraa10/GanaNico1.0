@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Tractor, Hammer, BarChart, LogOut } from "lucide-react";
+import { Tractor, Hammer, BarChart, LogOut, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function HomeScreen() {
@@ -23,6 +23,12 @@ export default function HomeScreen() {
       icon: <BarChart size={40} className="text-white" />,
       path: "/consolidado",
       description: "Reportes y análisis completos",
+    },
+    {
+      title: "AGENDA",
+      icon: <Calendar size={40} className="text-white" />,
+      path: "/agenda",
+      description: "Gestión de eventos y actividades",
     },
   ];
 
