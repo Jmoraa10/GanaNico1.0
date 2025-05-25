@@ -82,14 +82,15 @@ const AgendaScreen: React.FC = () => {
 
   const handleNuevoEvento = async () => {
     // Validación de campos requeridos
-    if (!nuevoEvento.fecha || !nuevoEvento.tipo || !nuevoEvento.descripcion || !nuevoEvento.lugar) {
-      setErrorForm('Faltan datos requeridos: Fecha, Tipo, Descripción y Lugar.');
+    if (!nuevoEvento.fecha || !nuevoEvento.tipo || !nuevoEvento.detalles || !nuevoEvento.lugar) {
+      setErrorForm('Faltan datos requeridos: Fecha, Tipo, Detalles y Lugar.');
       return;
     }
     setErrorForm('');
     try {
       const eventoAEnviar = {
         ...nuevoEvento,
+        descripcion: nuevoEvento.detalles,
         fechaVencimiento: nuevoEvento.fechaVencimiento ? nuevoEvento.fechaVencimiento : 'sin vencimiento',
       };
       await agendaService.crearEvento(eventoAEnviar);
@@ -274,7 +275,11 @@ const AgendaScreen: React.FC = () => {
               <button
                 onClick={() => {
                   setIsNuevoEventoOpen(true);
-                  setNuevoEvento({ ...nuevoEvento, fecha: fechaPrellenada || diaSeleccionado });
+                  setNuevoEvento({
+                    ...nuevoEvento,
+                    fecha: fechaPrellenada || diaSeleccionado,
+                    tipo: nuevoEvento.tipo || 'otros',
+                  });
                 }}
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
               >
