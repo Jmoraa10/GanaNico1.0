@@ -23,6 +23,7 @@ const AgendaScreen: React.FC = () => {
     fechaVencimiento: '',
   });
   const [fechaPrellenada, setFechaPrellenada] = useState<string | null>(null);
+  const [errorForm, setErrorForm] = useState<string>('');
 
   useEffect(() => {
     cargarEventosMes();
@@ -80,8 +81,18 @@ const AgendaScreen: React.FC = () => {
   };
 
   const handleNuevoEvento = async () => {
+    // Validación de campos requeridos
+    if (!nuevoEvento.fecha || !nuevoEvento.tipo || !nuevoEvento.descripcion || !nuevoEvento.lugar) {
+      setErrorForm('Faltan datos requeridos: Fecha, Tipo, Descripción y Lugar.');
+      return;
+    }
+    setErrorForm('');
     try {
-      await agendaService.crearEvento(nuevoEvento);
+      const eventoAEnviar = {
+        ...nuevoEvento,
+        fechaVencimiento: nuevoEvento.fechaVencimiento ? nuevoEvento.fechaVencimiento : 'sin vencimiento',
+      };
+      await agendaService.crearEvento(eventoAEnviar);
       setIsNuevoEventoOpen(false);
       cargarEventosMes();
       setNuevoEvento({
@@ -93,6 +104,7 @@ const AgendaScreen: React.FC = () => {
         fechaVencimiento: '',
       });
     } catch (error) {
+      setErrorForm('Error al crear evento. Intenta nuevamente.');
       console.error('Error al crear evento:', error);
     }
   };
@@ -348,6 +360,10 @@ const AgendaScreen: React.FC = () => {
                 />
               </div>
             </div>
+
+            {errorForm && (
+              <div className="mb-4 text-red-600 font-semibold text-center">{errorForm}</div>
+            )}
 
             <div className="mt-6 flex justify-end space-x-4">
               <button
