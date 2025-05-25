@@ -81,9 +81,10 @@ const AgendaScreen: React.FC = () => {
   };
 
   const handleNuevoEvento = async () => {
+    console.log('DEBUG nuevoEvento:', nuevoEvento);
     // Validación de campos requeridos
     if (!nuevoEvento.fecha || !nuevoEvento.tipo || !nuevoEvento.detalles || !nuevoEvento.lugar) {
-      setErrorForm('Faltan datos requeridos: Fecha, Tipo, Detalles y Lugar.');
+      setErrorForm(`Faltan datos requeridos: Fecha (${nuevoEvento.fecha}), Tipo (${nuevoEvento.tipo}), Detalles (${nuevoEvento.detalles}), Lugar (${nuevoEvento.lugar})`);
       return;
     }
     setErrorForm('');
