@@ -29,9 +29,9 @@ export interface NuevoEvento {
 }
 
 export const agendaService = {
-  async getEventosPorMes(mes: number, año: number): Promise<EventoAgenda[]> {
+  async getEventosPorMes(anio: number, mes: number): Promise<EventoAgenda[]> {
     try {
-      const response = await API.get(`/agenda/mes/${año}/${mes}`);
+      const response = await API.get(`/agenda/mes/${anio}/${mes}`);
       return response.data;
     } catch (error) {
       console.error('Error al obtener eventos:', error);

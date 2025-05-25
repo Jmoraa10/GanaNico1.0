@@ -25,8 +25,8 @@ exports.crearEvento = async (req, res) => {
 
 exports.getEventosPorMes = async (req, res) => {
   try {
-    const { año, mes } = req.params;
-    const regex = new RegExp(`^${año}-${mes.padStart(2, '0')}`);
+    const { anio, mes } = req.params;
+    const regex = new RegExp(`^${anio}-${mes.padStart(2, '0')}`);
     const eventos = await Evento.find({ fecha: { $regex: regex } });
     res.json(eventos);
   } catch (error) {
