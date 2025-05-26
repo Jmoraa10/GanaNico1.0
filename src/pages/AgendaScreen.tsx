@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, LogOut, ChevronLeft, ChevronRight, Plus, AlertTriangle } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
@@ -25,6 +25,8 @@ const AgendaScreen: React.FC = () => {
   const [fechaPrellenada, setFechaPrellenada] = useState<string | null>(null);
   const [errorForm, setErrorForm] = useState<string>('');
   const [eventosPendientes, setEventosPendientes] = useState<EventoAgenda[]>([]);
+  const printRef = useRef<HTMLDivElement>(null);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
 
   useEffect(() => {
     cargarEventosMes();
@@ -121,7 +123,8 @@ const AgendaScreen: React.FC = () => {
   const getEventosDelDia = (dia: number) => {
     if (!dia) return [];
     const fecha = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-    return eventos.filter(evento => evento.fecha === fecha);
+    // Comparar solo la parte de la fecha (YYYY-MM-DD)
+    return eventos.filter(evento => (evento.fecha || '').slice(0, 10) === fecha);
   };
 
   const getColorTipo = (tipo: string) => {
@@ -249,9 +252,19 @@ const AgendaScreen: React.FC = () => {
         </div>
 
         <div className="mt-10 bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-xl">
-          <h2 className="text-2xl font-bold mb-4 text-gray-800 flex items-center">
-            <AlertTriangle className="text-yellow-500 mr-2" /> Eventos por vencerse
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+              <AlertTriangle className="text-yellow-500 mr-2" /> Eventos por vencerse
+            </h2>
+            {eventosPendientes.length > 0 && (
+              <button
+                onClick={() => setShowPrintPreview(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-md"
+              >
+                Imprimir
+              </button>
+            )}
+          </div>
           {eventosPendientes.length === 0 ? (
             <p className="text-gray-500">No hay eventos pendientes por vencerse.</p>
           ) : (
@@ -455,6 +468,104 @@ const AgendaScreen: React.FC = () => {
           </div>
         </div>
       </Dialog>
+
+      {/* Vista previa de impresión */}
+      {showPrintPreview && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full p-8 relative" ref={printRef}>
+            <button
+              onClick={() => setShowPrintPreview(false)}
+              className="absolute top-4 right-4 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+            >
+              Cerrar
+            </button>
+            {/* Encabezado institucional */}
+            <div className="flex items-center justify-between mb-6 border-b pb-4">
+              <div className="flex items-center">
+                <img src="/assets/images/logo.png" alt="Logo" className="h-14 mr-4" />
+                <div>
+                  <h1 className="text-2xl font-bold text-green-900">INVERSIONES BONITO VIENTO SAS</h1>
+                  <div className="text-gray-700 font-semibold">Reporte de eventos por vencerse</div>
+                </div>
+              </div>
+              <div className="text-right text-gray-600 font-semibold">
+                Fecha: {new Date().toLocaleDateString('es-ES')}
+              </div>
+            </div>
+            {/* Lista de eventos */}
+            <ul className="space-y-4">
+              {eventosPendientes.map((evento, idx) => {
+                let diasRestantes = null;
+                if (evento.fechaVencimiento && evento.fechaVencimiento !== 'sin vencimiento') {
+                  const hoyDate = new Date();
+                  const vencimientoDate = new Date(evento.fechaVencimiento);
+                  diasRestantes = Math.ceil((vencimientoDate.getTime() - hoyDate.getTime()) / (1000 * 60 * 60 * 24));
+                }
+                const alerta = diasRestantes !== null && diasRestantes <= 3;
+                return (
+                  <li key={idx} className={`flex flex-col md:flex-row md:items-center justify-between border rounded-lg p-4 ${alerta ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}>
+                    <div>
+                      <div className="font-semibold text-lg text-gray-800 flex items-center">
+                        {evento.descripcion || evento.detallesTexto}
+                        {alerta && (
+                          <span title="¡Por vencerse!">
+                            <AlertTriangle className="ml-2 text-red-500 animate-bounce" />
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-gray-600 text-sm">Lugar: {evento.lugar}</div>
+                      <div className="text-gray-600 text-sm">Tipo: {evento.tipo}</div>
+                    </div>
+                    <div className="mt-2 md:mt-0 text-right">
+                      <div className="text-gray-700 font-bold">
+                        {evento.fechaVencimiento && evento.fechaVencimiento !== 'sin vencimiento'
+                          ? `Vence: ${new Date(evento.fechaVencimiento).toLocaleDateString('es-ES')}`
+                          : 'Sin vencimiento'}
+                      </div>
+                      {diasRestantes !== null && (
+                        <div className={`text-sm font-semibold ${alerta ? 'text-red-600' : 'text-green-700'}`}>
+                          {diasRestantes > 0
+                            ? `Faltan ${diasRestantes} día${diasRestantes === 1 ? '' : 's'}`
+                            : diasRestantes === 0
+                            ? '¡Vence hoy!'
+                            : 'Vencido'}
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            {/* Botón de impresión real */}
+            <div className="mt-8 flex justify-end">
+              <button
+                onClick={() => {
+                  if (printRef.current) {
+                    const printContents = printRef.current.innerHTML;
+                    const printWindow = window.open('', '', 'height=800,width=1000');
+                    if (printWindow) {
+                      printWindow.document.write('<html><head><title>Imprimir reporte</title>');
+                      printWindow.document.write('<link rel="stylesheet" href="/index.css" />');
+                      printWindow.document.write('</head><body>');
+                      printWindow.document.write(printContents);
+                      printWindow.document.write('</body></html>');
+                      printWindow.document.close();
+                      printWindow.focus();
+                      setTimeout(() => {
+                        printWindow.print();
+                        printWindow.close();
+                      }, 500);
+                    }
+                  }
+                }}
+                className="bg-green-700 text-white px-6 py-2 rounded-lg hover:bg-green-800 font-bold shadow-md"
+              >
+                Imprimir hoja
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
