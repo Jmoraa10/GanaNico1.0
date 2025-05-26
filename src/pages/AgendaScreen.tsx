@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, LogOut, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { Home, LogOut, ChevronLeft, ChevronRight, Plus, AlertTriangle } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
 import { agendaService, EventoAgenda, NuevoEvento } from '../services/agendaService';
 
@@ -24,9 +24,11 @@ const AgendaScreen: React.FC = () => {
   });
   const [fechaPrellenada, setFechaPrellenada] = useState<string | null>(null);
   const [errorForm, setErrorForm] = useState<string>('');
+  const [eventosPendientes, setEventosPendientes] = useState<EventoAgenda[]>([]);
 
   useEffect(() => {
     cargarEventosMes();
+    cargarEventosPendientes();
   }, [currentDate]);
 
   const cargarEventosMes = async () => {
@@ -41,6 +43,11 @@ const AgendaScreen: React.FC = () => {
     const eventos = await agendaService.getEventosPorDia(fecha);
     setEventosDiaSeleccionado(eventos);
     setIsModalOpen(true);
+  };
+
+  const cargarEventosPendientes = async () => {
+    const pendientes = await agendaService.getEventosPendientes();
+    setEventosPendientes(pendientes);
   };
 
   const cambiarMes = (incremento: number) => {
@@ -212,7 +219,14 @@ const AgendaScreen: React.FC = () => {
               >
                 {dia && (
                   <>
-                    <div className="font-semibold mb-2">{dia}</div>
+                    <div className="font-semibold mb-2 flex items-center justify-between">
+                      <span>{dia}</span>
+                      {getEventosDelDia(dia).length > 0 && (
+                        <span className="ml-2 bg-green-700 text-white text-xs rounded-full px-2 py-0.5 font-bold shadow-md">
+                          {getEventosDelDia(dia).length}
+                        </span>
+                      )}
+                    </div>
                     <div className="space-y-1">
                       {getEventosDelDia(dia).map((evento, idx) => (
                         <div
@@ -232,6 +246,59 @@ const AgendaScreen: React.FC = () => {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="mt-10 bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-xl">
+          <h2 className="text-2xl font-bold mb-4 text-gray-800 flex items-center">
+            <AlertTriangle className="text-yellow-500 mr-2" /> Eventos por vencerse
+          </h2>
+          {eventosPendientes.length === 0 ? (
+            <p className="text-gray-500">No hay eventos pendientes por vencerse.</p>
+          ) : (
+            <ul className="space-y-4">
+              {eventosPendientes.map((evento, idx) => {
+                let diasRestantes = null;
+                if (evento.fechaVencimiento && evento.fechaVencimiento !== 'sin vencimiento') {
+                  const hoyDate = new Date();
+                  const vencimientoDate = new Date(evento.fechaVencimiento);
+                  diasRestantes = Math.ceil((vencimientoDate.getTime() - hoyDate.getTime()) / (1000 * 60 * 60 * 24));
+                }
+                const alerta = diasRestantes !== null && diasRestantes <= 3;
+                return (
+                  <li key={idx} className={`flex flex-col md:flex-row md:items-center justify-between border rounded-lg p-4 ${alerta ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}>
+                    <div>
+                      <div className="font-semibold text-lg text-gray-800 flex items-center">
+                        {evento.descripcion || evento.detallesTexto}
+                        {alerta && (
+                          <span title="¡Por vencerse!">
+                            <AlertTriangle className="ml-2 text-red-500 animate-bounce" />
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-gray-600 text-sm">Lugar: {evento.lugar}</div>
+                      <div className="text-gray-600 text-sm">Tipo: {evento.tipo}</div>
+                    </div>
+                    <div className="mt-2 md:mt-0 text-right">
+                      <div className="text-gray-700 font-bold">
+                        {evento.fechaVencimiento && evento.fechaVencimiento !== 'sin vencimiento'
+                          ? `Vence: ${new Date(evento.fechaVencimiento).toLocaleDateString('es-ES')}`
+                          : 'Sin vencimiento'}
+                      </div>
+                      {diasRestantes !== null && (
+                        <div className={`text-sm font-semibold ${alerta ? 'text-red-600' : 'text-green-700'}`}>
+                          {diasRestantes > 0
+                            ? `Faltan ${diasRestantes} día${diasRestantes === 1 ? '' : 's'}`
+                            : diasRestantes === 0
+                            ? '¡Vence hoy!'
+                            : 'Vencido'}
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </div>
 
