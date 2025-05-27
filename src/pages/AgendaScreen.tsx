@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, LogOut, ChevronLeft, ChevronRight, Plus, AlertTriangle } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
 import { agendaService, EventoAgenda, NuevoEvento } from '../services/agendaService';
-import logoEmpresa from '/assets/images/logo.png';
 
 const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -26,7 +25,7 @@ const AgendaScreen: React.FC = () => {
   const [fechaPrellenada, setFechaPrellenada] = useState<string | null>(null);
   const [errorForm, setErrorForm] = useState<string>('');
   const [eventosPendientes, setEventosPendientes] = useState<EventoAgenda[]>([]);
-  const [mostrarImpresion, setMostrarImpresion] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     cargarEventosMes();
@@ -123,8 +122,7 @@ const AgendaScreen: React.FC = () => {
   const getEventosDelDia = (dia: number) => {
     if (!dia) return [];
     const fecha = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-    // Comparar solo la parte YYYY-MM-DD
-    return eventos.filter(evento => (evento.fecha || '').slice(0, 10) === fecha);
+    return eventos.filter(evento => evento.fecha === fecha);
   };
 
   const getColorTipo = (tipo: string) => {
@@ -147,6 +145,47 @@ const AgendaScreen: React.FC = () => {
   };
 
   const hoy = new Date().toISOString().split('T')[0];
+
+  const handlePrint = () => {
+    if (!printRef.current) return;
+    const printContents = printRef.current.innerHTML;
+    const printWindow = window.open('', '', 'height=800,width=1000');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Eventos por Vencerse - Inversiones Bonito Viento SAS</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 40px; }
+              .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+              .logo { height: 60px; }
+              .empresa { font-size: 2rem; font-weight: bold; color: #14532d; }
+              .fecha { font-size: 1rem; color: #555; }
+              .evento { border-bottom: 1px solid #ccc; padding: 12px 0; }
+              .evento:last-child { border-bottom: none; }
+              .titulo { font-size: 1.1rem; font-weight: bold; color: #222; }
+              .vencimiento { color: #b91c1c; font-weight: bold; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <img src="/assets/images/logo.png" class="logo" alt="Logo" />
+              <div class="empresa">INVERSIONES BONITO VIENTO SAS</div>
+              <div class="fecha">${new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+            </div>
+            <h2 style="font-size:1.5rem; color:#b45309; margin-bottom:20px;">Eventos por Vencerse</h2>
+            <div>${printContents}</div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 500);
+    }
+  };
 
   return (
     <div
@@ -231,18 +270,18 @@ const AgendaScreen: React.FC = () => {
                       )}
                     </div>
                     <div className="space-y-1">
-                      {getEventosDelDia(dia).map((evento, idx) => (
+                      {getEventosDelDia(dia).slice(0, 2).map((evento, idx) => (
                         <div
                           key={idx}
                           className={`text-xs p-1 rounded ${getColorTipo(evento.tipo)} text-white truncate flex items-center`}
                           title={evento.descripcion}
                         >
                           {evento.descripcion}
-                          {evento.estado === 'pendiente' && evento.fechaVencimiento && evento.fechaVencimiento >= hoy && (
-                            <span className="ml-2 inline-block w-3 h-3 bg-red-500 rounded-full animate-pulse" title="Evento pendiente con vencimiento"></span>
-                          )}
                         </div>
                       ))}
+                      {getEventosDelDia(dia).length > 2 && (
+                        <div className="text-xs text-gray-500">+{getEventosDelDia(dia).length - 2} más...</div>
+                      )}
                     </div>
                   </>
                 )}
@@ -252,64 +291,65 @@ const AgendaScreen: React.FC = () => {
         </div>
 
         <div className="mt-10 bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-xl">
-          <h2 className="text-2xl font-bold mb-4 text-gray-800 flex items-center">
-            <AlertTriangle className="text-yellow-500 mr-2" /> Eventos por vencerse
-          </h2>
-          {eventosPendientes.length === 0 ? (
-            <p className="text-gray-500">No hay eventos pendientes por vencerse.</p>
-          ) : (
-            <ul className="space-y-4">
-              {eventosPendientes.map((evento, idx) => {
-                let diasRestantes = null;
-                if (evento.fechaVencimiento && evento.fechaVencimiento !== 'sin vencimiento') {
-                  const hoyDate = new Date();
-                  const vencimientoDate = new Date(evento.fechaVencimiento);
-                  diasRestantes = Math.ceil((vencimientoDate.getTime() - hoyDate.getTime()) / (1000 * 60 * 60 * 24));
-                }
-                const alerta = diasRestantes !== null && diasRestantes <= 3;
-                return (
-                  <li key={idx} className={`flex flex-col md:flex-row md:items-center justify-between border rounded-lg p-4 ${alerta ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}>
-                    <div>
-                      <div className="font-semibold text-lg text-gray-800 flex items-center">
-                        {evento.descripcion || evento.detallesTexto}
-                        {alerta && (
-                          <span title="¡Por vencerse!">
-                            <AlertTriangle className="ml-2 text-red-500 animate-bounce" />
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-gray-600 text-sm">Lugar: {evento.lugar}</div>
-                      <div className="text-gray-600 text-sm">Tipo: {evento.tipo}</div>
-                    </div>
-                    <div className="mt-2 md:mt-0 text-right">
-                      <div className="text-gray-700 font-bold">
-                        {evento.fechaVencimiento && evento.fechaVencimiento !== 'sin vencimiento'
-                          ? `Vence: ${new Date(evento.fechaVencimiento).toLocaleDateString('es-ES')}`
-                          : 'Sin vencimiento'}
-                      </div>
-                      {diasRestantes !== null && (
-                        <div className={`text-sm font-semibold ${alerta ? 'text-red-600' : 'text-green-700'}`}>
-                          {diasRestantes > 0
-                            ? `Faltan ${diasRestantes} día${diasRestantes === 1 ? '' : 's'}`
-                            : diasRestantes === 0
-                            ? '¡Vence hoy!'
-                            : 'Vencido'}
-                        </div>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          <div className="flex justify-end mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+              <AlertTriangle className="text-yellow-500 mr-2" /> Eventos por vencerse
+            </h2>
             <button
-              onClick={() => setMostrarImpresion(true)}
-              className="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors font-bold flex items-center"
+              onClick={handlePrint}
+              className="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors font-semibold shadow-md"
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-6 0v4m0 0h4m-4 0H8" /></svg>
               Imprimir
             </button>
+          </div>
+          <div ref={printRef}>
+            {eventosPendientes.length === 0 ? (
+              <p className="text-gray-500">No hay eventos pendientes por vencerse.</p>
+            ) : (
+              <ul className="space-y-4">
+                {eventosPendientes.map((evento, idx) => {
+                  let diasRestantes = null;
+                  if (evento.fechaVencimiento && evento.fechaVencimiento !== 'sin vencimiento') {
+                    const hoyDate = new Date();
+                    const vencimientoDate = new Date(evento.fechaVencimiento);
+                    diasRestantes = Math.ceil((vencimientoDate.getTime() - hoyDate.getTime()) / (1000 * 60 * 60 * 24));
+                  }
+                  const alerta = diasRestantes !== null && diasRestantes <= 3;
+                  return (
+                    <li key={idx} className={`flex flex-col md:flex-row md:items-center justify-between border rounded-lg p-4 ${alerta ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'} evento`}>
+                      <div>
+                        <div className="font-semibold text-lg text-gray-800 flex items-center titulo">
+                          {evento.descripcion || evento.detallesTexto}
+                          {alerta && (
+                            <span title="¡Por vencerse!">
+                              <AlertTriangle className="ml-2 text-red-500 animate-bounce" />
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-gray-600 text-sm">Lugar: {evento.lugar}</div>
+                        <div className="text-gray-600 text-sm">Tipo: {evento.tipo}</div>
+                      </div>
+                      <div className="mt-2 md:mt-0 text-right">
+                        <div className="text-gray-700 font-bold vencimiento">
+                          {evento.fechaVencimiento && evento.fechaVencimiento !== 'sin vencimiento'
+                            ? `Vence: ${new Date(evento.fechaVencimiento).toLocaleDateString('es-ES')}`
+                            : 'Sin vencimiento'}
+                        </div>
+                        {diasRestantes !== null && (
+                          <div className={`text-sm font-semibold ${alerta ? 'text-red-600' : 'text-green-700'}`}>
+                            {diasRestantes > 0
+                              ? `Faltan ${diasRestantes} día${diasRestantes === 1 ? '' : 's'}`
+                              : diasRestantes === 0
+                              ? '¡Vence hoy!'
+                              : 'Vencido'}
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         </div>
       </div>
@@ -467,76 +507,6 @@ const AgendaScreen: React.FC = () => {
           </div>
         </div>
       </Dialog>
-
-      {/* Panel de impresión */}
-      {mostrarImpresion && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center print:bg-transparent">
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full p-8 relative print:p-0 print:shadow-none print:rounded-none">
-            <button
-              onClick={() => setMostrarImpresion(false)}
-              className="absolute top-4 right-4 bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-lg print:hidden"
-            >
-              Cerrar
-            </button>
-            <div className="flex items-center mb-6 border-b pb-4">
-              <img src={logoEmpresa} alt="Logo" className="h-16 w-16 object-contain mr-4" />
-              <div>
-                <h1 className="text-2xl font-bold text-green-900">INVERSIONES BONITO VIENTO SAS</h1>
-                <div className="text-gray-700 font-semibold">Reporte de eventos por vencerse</div>
-                <div className="text-gray-500">Fecha: {new Date().toLocaleDateString('es-ES')}</div>
-              </div>
-            </div>
-            <table className="w-full border-collapse mb-6">
-              <thead>
-                <tr className="bg-green-800 text-white">
-                  <th className="p-2 border">Descripción</th>
-                  <th className="p-2 border">Lugar</th>
-                  <th className="p-2 border">Tipo</th>
-                  <th className="p-2 border">Fecha de Vencimiento</th>
-                  <th className="p-2 border">Días Restantes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {eventosPendientes.map((evento, idx) => {
-                  let diasRestantes = null;
-                  if (evento.fechaVencimiento && evento.fechaVencimiento !== 'sin vencimiento') {
-                    const hoyDate = new Date();
-                    const vencimientoDate = new Date(evento.fechaVencimiento);
-                    diasRestantes = Math.ceil((vencimientoDate.getTime() - hoyDate.getTime()) / (1000 * 60 * 60 * 24));
-                  }
-                  return (
-                    <tr key={idx} className="border-b">
-                      <td className="p-2 border">{evento.descripcion || evento.detallesTexto}</td>
-                      <td className="p-2 border">{evento.lugar}</td>
-                      <td className="p-2 border">{evento.tipo}</td>
-                      <td className="p-2 border">{evento.fechaVencimiento && evento.fechaVencimiento !== 'sin vencimiento' ? new Date(evento.fechaVencimiento).toLocaleDateString('es-ES') : 'Sin vencimiento'}</td>
-                      <td className="p-2 border text-center font-bold">
-                        {diasRestantes !== null
-                          ? diasRestantes > 0
-                            ? `Faltan ${diasRestantes} día${diasRestantes === 1 ? '' : 's'}`
-                            : diasRestantes === 0
-                            ? '¡Vence hoy!'
-                            : 'Vencido'
-                          : '-'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            <div className="flex justify-end print:hidden">
-              <button
-                onClick={() => {
-                  setTimeout(() => window.print(), 100);
-                }}
-                className="bg-green-700 text-white px-6 py-2 rounded-lg hover:bg-green-800 font-bold"
-              >
-                Imprimir hoja
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
