@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, LogOut, ChevronLeft, ChevronRight, Plus, AlertTriangle } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
 import { agendaService, EventoAgenda, NuevoEvento } from '../services/agendaService';
+import logoEmpresa from '/assets/images/logo.png';
 
 const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -25,8 +26,7 @@ const AgendaScreen: React.FC = () => {
   const [fechaPrellenada, setFechaPrellenada] = useState<string | null>(null);
   const [errorForm, setErrorForm] = useState<string>('');
   const [eventosPendientes, setEventosPendientes] = useState<EventoAgenda[]>([]);
-  const printRef = useRef<HTMLDivElement>(null);
-  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [mostrarImpresion, setMostrarImpresion] = useState(false);
 
   useEffect(() => {
     cargarEventosMes();
@@ -123,7 +123,7 @@ const AgendaScreen: React.FC = () => {
   const getEventosDelDia = (dia: number) => {
     if (!dia) return [];
     const fecha = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-    // Comparar solo la parte de la fecha (YYYY-MM-DD)
+    // Comparar solo la parte YYYY-MM-DD
     return eventos.filter(evento => (evento.fecha || '').slice(0, 10) === fecha);
   };
 
@@ -252,19 +252,9 @@ const AgendaScreen: React.FC = () => {
         </div>
 
         <div className="mt-10 bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-xl">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-              <AlertTriangle className="text-yellow-500 mr-2" /> Eventos por vencerse
-            </h2>
-            {eventosPendientes.length > 0 && (
-              <button
-                onClick={() => setShowPrintPreview(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-md"
-              >
-                Imprimir
-              </button>
-            )}
-          </div>
+          <h2 className="text-2xl font-bold mb-4 text-gray-800 flex items-center">
+            <AlertTriangle className="text-yellow-500 mr-2" /> Eventos por vencerse
+          </h2>
           {eventosPendientes.length === 0 ? (
             <p className="text-gray-500">No hay eventos pendientes por vencerse.</p>
           ) : (
@@ -312,6 +302,15 @@ const AgendaScreen: React.FC = () => {
               })}
             </ul>
           )}
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => setMostrarImpresion(true)}
+              className="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors font-bold flex items-center"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-6 0v4m0 0h4m-4 0H8" /></svg>
+              Imprimir
+            </button>
+          </div>
         </div>
       </div>
 
@@ -469,96 +468,68 @@ const AgendaScreen: React.FC = () => {
         </div>
       </Dialog>
 
-      {/* Vista previa de impresión */}
-      {showPrintPreview && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full p-8 relative" ref={printRef}>
+      {/* Panel de impresión */}
+      {mostrarImpresion && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center print:bg-transparent">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full p-8 relative print:p-0 print:shadow-none print:rounded-none">
             <button
-              onClick={() => setShowPrintPreview(false)}
-              className="absolute top-4 right-4 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+              onClick={() => setMostrarImpresion(false)}
+              className="absolute top-4 right-4 bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-lg print:hidden"
             >
               Cerrar
             </button>
-            {/* Encabezado institucional */}
-            <div className="flex items-center justify-between mb-6 border-b pb-4">
-              <div className="flex items-center">
-                <img src="/assets/images/logo.png" alt="Logo" className="h-14 mr-4" />
-                <div>
-                  <h1 className="text-2xl font-bold text-green-900">INVERSIONES BONITO VIENTO SAS</h1>
-                  <div className="text-gray-700 font-semibold">Reporte de eventos por vencerse</div>
-                </div>
-              </div>
-              <div className="text-right text-gray-600 font-semibold">
-                Fecha: {new Date().toLocaleDateString('es-ES')}
+            <div className="flex items-center mb-6 border-b pb-4">
+              <img src={logoEmpresa} alt="Logo" className="h-16 w-16 object-contain mr-4" />
+              <div>
+                <h1 className="text-2xl font-bold text-green-900">INVERSIONES BONITO VIENTO SAS</h1>
+                <div className="text-gray-700 font-semibold">Reporte de eventos por vencerse</div>
+                <div className="text-gray-500">Fecha: {new Date().toLocaleDateString('es-ES')}</div>
               </div>
             </div>
-            {/* Lista de eventos */}
-            <ul className="space-y-4">
-              {eventosPendientes.map((evento, idx) => {
-                let diasRestantes = null;
-                if (evento.fechaVencimiento && evento.fechaVencimiento !== 'sin vencimiento') {
-                  const hoyDate = new Date();
-                  const vencimientoDate = new Date(evento.fechaVencimiento);
-                  diasRestantes = Math.ceil((vencimientoDate.getTime() - hoyDate.getTime()) / (1000 * 60 * 60 * 24));
-                }
-                const alerta = diasRestantes !== null && diasRestantes <= 3;
-                return (
-                  <li key={idx} className={`flex flex-col md:flex-row md:items-center justify-between border rounded-lg p-4 ${alerta ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}>
-                    <div>
-                      <div className="font-semibold text-lg text-gray-800 flex items-center">
-                        {evento.descripcion || evento.detallesTexto}
-                        {alerta && (
-                          <span title="¡Por vencerse!">
-                            <AlertTriangle className="ml-2 text-red-500 animate-bounce" />
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-gray-600 text-sm">Lugar: {evento.lugar}</div>
-                      <div className="text-gray-600 text-sm">Tipo: {evento.tipo}</div>
-                    </div>
-                    <div className="mt-2 md:mt-0 text-right">
-                      <div className="text-gray-700 font-bold">
-                        {evento.fechaVencimiento && evento.fechaVencimiento !== 'sin vencimiento'
-                          ? `Vence: ${new Date(evento.fechaVencimiento).toLocaleDateString('es-ES')}`
-                          : 'Sin vencimiento'}
-                      </div>
-                      {diasRestantes !== null && (
-                        <div className={`text-sm font-semibold ${alerta ? 'text-red-600' : 'text-green-700'}`}>
-                          {diasRestantes > 0
+            <table className="w-full border-collapse mb-6">
+              <thead>
+                <tr className="bg-green-800 text-white">
+                  <th className="p-2 border">Descripción</th>
+                  <th className="p-2 border">Lugar</th>
+                  <th className="p-2 border">Tipo</th>
+                  <th className="p-2 border">Fecha de Vencimiento</th>
+                  <th className="p-2 border">Días Restantes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {eventosPendientes.map((evento, idx) => {
+                  let diasRestantes = null;
+                  if (evento.fechaVencimiento && evento.fechaVencimiento !== 'sin vencimiento') {
+                    const hoyDate = new Date();
+                    const vencimientoDate = new Date(evento.fechaVencimiento);
+                    diasRestantes = Math.ceil((vencimientoDate.getTime() - hoyDate.getTime()) / (1000 * 60 * 60 * 24));
+                  }
+                  return (
+                    <tr key={idx} className="border-b">
+                      <td className="p-2 border">{evento.descripcion || evento.detallesTexto}</td>
+                      <td className="p-2 border">{evento.lugar}</td>
+                      <td className="p-2 border">{evento.tipo}</td>
+                      <td className="p-2 border">{evento.fechaVencimiento && evento.fechaVencimiento !== 'sin vencimiento' ? new Date(evento.fechaVencimiento).toLocaleDateString('es-ES') : 'Sin vencimiento'}</td>
+                      <td className="p-2 border text-center font-bold">
+                        {diasRestantes !== null
+                          ? diasRestantes > 0
                             ? `Faltan ${diasRestantes} día${diasRestantes === 1 ? '' : 's'}`
                             : diasRestantes === 0
                             ? '¡Vence hoy!'
-                            : 'Vencido'}
-                        </div>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-            {/* Botón de impresión real */}
-            <div className="mt-8 flex justify-end">
+                            : 'Vencido'
+                          : '-'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div className="flex justify-end print:hidden">
               <button
                 onClick={() => {
-                  if (printRef.current) {
-                    const printContents = printRef.current.innerHTML;
-                    const printWindow = window.open('', '', 'height=800,width=1000');
-                    if (printWindow) {
-                      printWindow.document.write('<html><head><title>Imprimir reporte</title>');
-                      printWindow.document.write('<link rel="stylesheet" href="/index.css" />');
-                      printWindow.document.write('</head><body>');
-                      printWindow.document.write(printContents);
-                      printWindow.document.write('</body></html>');
-                      printWindow.document.close();
-                      printWindow.focus();
-                      setTimeout(() => {
-                        printWindow.print();
-                        printWindow.close();
-                      }, 500);
-                    }
-                  }
+                  setTimeout(() => window.print(), 100);
                 }}
-                className="bg-green-700 text-white px-6 py-2 rounded-lg hover:bg-green-800 font-bold shadow-md"
+                className="bg-green-700 text-white px-6 py-2 rounded-lg hover:bg-green-800 font-bold"
               >
                 Imprimir hoja
               </button>
