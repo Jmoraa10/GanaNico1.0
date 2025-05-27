@@ -67,5 +67,14 @@ export const agendaService = {
       console.error('Error al obtener eventos pendientes:', error);
       return [];
     }
+  },
+
+  async marcarEventoCumplido(eventoId: string): Promise<void> {
+    try {
+      await API.put(`/agenda/${eventoId}/cumplido`);
+    } catch (error) {
+      console.error('Error al marcar evento como cumplido:', error);
+      throw error;
+    }
   }
 }; 

@@ -52,4 +52,17 @@ exports.getEventosPendientes = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener eventos pendientes', error });
   }
+};
+
+exports.marcarEventoCumplido = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const evento = await Evento.findByIdAndUpdate(id, { estado: 'completado' }, { new: true });
+    if (!evento) {
+      return res.status(404).json({ message: 'Evento no encontrado' });
+    }
+    res.json(evento);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al marcar evento como cumplido', error });
+  }
 }; 

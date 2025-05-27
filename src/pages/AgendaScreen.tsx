@@ -187,6 +187,25 @@ const AgendaScreen: React.FC = () => {
     }
   };
 
+  // Función para obtener la descripción corta de un evento
+  const getDescripcionCorta = (evento: EventoAgenda): string => {
+    if (typeof evento.descripcion === 'string' && evento.descripcion.trim() !== '') return evento.descripcion;
+    if (typeof evento.detallesTexto === 'string' && evento.detallesTexto.trim() !== '') return evento.detallesTexto;
+    if (typeof evento.detalles === 'string' && (evento.detalles as string).trim() !== '') return evento.detalles as string;
+    if (typeof evento.detalles === 'object' && evento.detalles !== null) return JSON.stringify(evento.detalles);
+    return '';
+  };
+
+  const marcarCumplido = async (eventoId: string) => {
+    try {
+      await agendaService.marcarEventoCumplido(eventoId);
+      cargarEventosPendientes();
+      cargarEventosMes();
+    } catch (error) {
+      alert('Error al marcar como cumplido.');
+    }
+  };
+
   return (
     <div
       className="h-screen w-full bg-cover bg-center flex flex-col justify-between font-rio"
@@ -274,9 +293,9 @@ const AgendaScreen: React.FC = () => {
                         <div
                           key={idx}
                           className={`text-xs p-1 rounded ${getColorTipo(evento.tipo)} text-white truncate flex items-center`}
-                          title={evento.descripcion || evento.detallesTexto}
+                          title={getDescripcionCorta(evento)}
                         >
-                          {evento.descripcion || evento.detallesTexto}
+                          {getDescripcionCorta(evento)}
                         </div>
                       ))}
                       {getEventosDelDia(dia).length > 2 && (
@@ -316,14 +335,17 @@ const AgendaScreen: React.FC = () => {
                   }
                   const alerta = diasRestantes !== null && diasRestantes <= 3;
                   return (
-                    <li key={idx} className={`flex flex-col md:flex-row md:items-center justify-between border rounded-lg p-4 ${alerta ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'} evento`}>
+                    <li key={idx} className={`flex flex-col md:flex-row md:items-center justify-between border rounded-lg p-4 evento ${evento.estado === 'completado' ? 'border-green-600 bg-green-50' : alerta ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}>
                       <div>
                         <div className="font-semibold text-lg text-gray-800 flex items-center titulo">
-                          {evento.descripcion || evento.detallesTexto}
-                          {alerta && (
+                          {getDescripcionCorta(evento)}
+                          {alerta && evento.estado !== 'completado' && (
                             <span title="¡Por vencerse!">
                               <AlertTriangle className="ml-2 text-red-500 animate-bounce" />
                             </span>
+                          )}
+                          {evento.estado === 'completado' && (
+                            <span className="ml-2 text-green-700 font-bold">Cumplido</span>
                           )}
                         </div>
                         <div className="text-gray-600 text-sm">Lugar: {evento.lugar}</div>
@@ -336,13 +358,21 @@ const AgendaScreen: React.FC = () => {
                             : 'Sin vencimiento'}
                         </div>
                         {diasRestantes !== null && (
-                          <div className={`text-sm font-semibold ${alerta ? 'text-red-600' : 'text-green-700'}`}>
+                          <div className={`text-sm font-semibold ${alerta && evento.estado !== 'completado' ? 'text-red-600' : 'text-green-700'}`}>
                             {diasRestantes > 0
                               ? `Faltan ${diasRestantes} día${diasRestantes === 1 ? '' : 's'}`
                               : diasRestantes === 0
                               ? '¡Vence hoy!'
                               : 'Vencido'}
                           </div>
+                        )}
+                        {evento.estado !== 'completado' && (
+                          <button
+                            onClick={() => marcarCumplido(evento._id!)}
+                            className="mt-2 bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition-colors font-semibold shadow-md"
+                          >
+                            Cumplido
+                          </button>
                         )}
                       </div>
                     </li>
