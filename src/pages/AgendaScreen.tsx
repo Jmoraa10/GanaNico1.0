@@ -274,9 +274,9 @@ const AgendaScreen: React.FC = () => {
                         <div
                           key={idx}
                           className={`text-xs p-1 rounded ${getColorTipo(evento.tipo)} text-white truncate flex items-center`}
-                          title={evento.descripcion}
+                          title={evento.descripcion || evento.detallesTexto}
                         >
-                          {evento.descripcion}
+                          {evento.descripcion || evento.detallesTexto}
                         </div>
                       ))}
                       {getEventosDelDia(dia).length > 2 && (
