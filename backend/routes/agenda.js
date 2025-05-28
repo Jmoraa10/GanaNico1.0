@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const agendaController = require('../controllers/agendaController');
-const { verificarToken } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 
-// Todas las rutas requieren autenticación
-router.use(verificarToken);
+// Aplicar middleware de autenticación a todas las rutas
+router.use(authenticate);
 
 // Obtener eventos
 router.get('/', agendaController.getEventos);
