@@ -1,184 +1,126 @@
 const Venta = require('../models/Venta');
 const Finca = require('../models/Finca');
-const { crearEventoAutomatico } = require('./eventoController');
-
-// Obtener todas las ventas
-exports.getVentas = async (req, res) => {
-  try {
-    const ventas = await Venta.find()
-      .populate('finca', 'nombre ubicacion')
-      .sort({ fecha: -1 });
-    res.status(200).json(ventas);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener las ventas', error });
-  }
-};
-
-// Obtener una venta por ID
-exports.getVenta = async (req, res) => {
-  try {
-    const venta = await Venta.findById(req.params.id)
-      .populate('finca', 'nombre ubicacion');
-    
-    if (!venta) {
-      return res.status(404).json({ message: 'Venta no encontrada' });
-    }
-    
-    res.status(200).json(venta);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener la venta', error });
-  }
-};
+const agendaController = require('./agendaController');
 
 // Crear una nueva venta
-exports.createVenta = async (req, res) => {
+exports.crearVenta = async (req, res) => {
   try {
-    const nuevaVenta = new Venta({
-      ...req.body,
-      registradoPor: req.user.uid
-    });
-    
-    const ventaGuardada = await nuevaVenta.save();
-    const finca = await Finca.findById(ventaGuardada.finca);
+    const {
+      fincaId,
+      comprador,
+      destino,
+      registradoPor,
+      tipoAnimales,
+      valorPorKilo,
+      animales,
+      estadisticas,
+      movimientosAnimales,
+      movimientosBodega,
+      fecha
+    } = req.body;
 
-    // Crear evento automático para la nueva venta
-    await crearEventoAutomatico({
-      titulo: `Nueva Venta en ${finca.nombre}`,
-      descripcion: `Venta de ${ventaGuardada.estadisticas.totalAnimales} ${ventaGuardada.tipoAnimales}`,
+    // Verificar que la finca existe
+    const finca = await Finca.findById(fincaId);
+    if (!finca) {
+      return res.status(404).json({ mensaje: 'Finca no encontrada' });
+    }
+
+    // Crear la venta con la fecha proporcionada o la fecha actual
+    const venta = new Venta({
+      finca: fincaId,
+      comprador,
+      destino,
+      registradoPor,
+      tipoAnimales,
+      valorPorKilo,
+      fecha: fecha || new Date(),
+      animales,
+      estadisticas,
+      movimientosAnimales,
+      movimientosBodega,
+      estado: 'completada'
+    });
+
+    // Guardar la venta
+    const ventaGuardada = await venta.save();
+
+    // Agregar la venta al array de ventas de la finca
+    if (!finca.ventas) {
+      finca.ventas = [];
+    }
+    finca.ventas.push(ventaGuardada._id);
+    await finca.save();
+
+    // Crear evento en la agenda
+    await agendaController.crearEventoDesdeModulo({
       fecha: ventaGuardada.fecha,
       tipo: 'venta',
-      lugar: finca.ubicacion,
-      detalles: {
-        ventaId: ventaGuardada._id,
-        fincaId: finca._id,
-        fincaNombre: finca.nombre,
-        comprador: ventaGuardada.comprador,
-        totalAnimales: ventaGuardada.estadisticas.totalAnimales,
-        valorTotal: ventaGuardada.estadisticas.valorTotal
+      subtipo: 'directa',
+      titulo: `Venta Directa: ${tipoAnimales}`,
+      descripcion: `Venta de ${estadisticas.totalAnimales} animales a ${comprador} - Valor: $${estadisticas.valorTotal.toLocaleString()}`,
+      lugar: finca.nombre,
+      referencia: {
+        tipo: 'venta',
+        id: ventaGuardada._id
       },
-      usuarioId: req.user.uid,
-      referenciaId: ventaGuardada._id,
-      referenciaTipo: 'venta'
+      usuarioId: req.user.uid
     });
 
-    // Crear evento para el movimiento de ganado
-    await crearEventoAutomatico({
-      titulo: `Salida de Ganado en ${finca.nombre}`,
-      descripcion: `Salida de ${ventaGuardada.estadisticas.totalAnimales} ${ventaGuardada.tipoAnimales} por venta`,
-      fecha: ventaGuardada.fecha,
-      tipo: 'salida',
-      lugar: finca.ubicacion,
-      detalles: {
-        ventaId: ventaGuardada._id,
-        fincaId: finca._id,
-        fincaNombre: finca.nombre,
-        tipoAnimales: ventaGuardada.tipoAnimales,
-        cantidad: ventaGuardada.estadisticas.totalAnimales
-      },
-      usuarioId: req.user.uid,
-      referenciaId: ventaGuardada._id,
-      referenciaTipo: 'venta'
+    res.status(201).json({
+      mensaje: 'Venta registrada exitosamente',
+      venta: ventaGuardada
     });
-
-    // Si hay movimientos de bodega, crear eventos para cada uno
-    if (ventaGuardada.movimientosBodega && ventaGuardada.movimientosBodega.length > 0) {
-      for (const movimiento of ventaGuardada.movimientosBodega) {
-        await crearEventoAutomatico({
-          titulo: `Salida de Bodega en ${finca.nombre}`,
-          descripcion: `Salida de ${movimiento.cantidad} ${movimiento.producto}`,
-          fecha: ventaGuardada.fecha,
-          tipo: 'bodega',
-          lugar: finca.ubicacion,
-          detalles: {
-            ventaId: ventaGuardada._id,
-            fincaId: finca._id,
-            fincaNombre: finca.nombre,
-            producto: movimiento.producto,
-            cantidad: movimiento.cantidad,
-            motivo: movimiento.motivo
-          },
-          usuarioId: req.user.uid,
-          referenciaId: ventaGuardada._id,
-          referenciaTipo: 'venta'
-        });
-      }
-    }
-    
-    res.status(201).json(ventaGuardada);
   } catch (error) {
-    res.status(500).json({ message: 'Error al crear la venta', error });
+    console.error('Error al crear la venta:', error);
+    res.status(500).json({
+      mensaje: 'Error al registrar la venta',
+      error: error.message
+    });
   }
 };
 
-// Actualizar una venta
-exports.updateVenta = async (req, res) => {
+// Obtener todas las ventas de una finca
+exports.getVentasByFinca = async (req, res) => {
   try {
-    const ventaActualizada = await Venta.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    ).populate('finca', 'nombre ubicacion');
+    const { fincaId } = req.params;
+    const ventas = await Venta.find({ finca: fincaId })
+      .sort({ fecha: -1 })
+      .lean(); // Usar lean() para obtener objetos JavaScript planos
     
-    if (!ventaActualizada) {
-      return res.status(404).json({ message: 'Venta no encontrada' });
-    }
-
-    // Crear evento automático para la actualización
-    await crearEventoAutomatico({
-      titulo: `Actualización de Venta en ${ventaActualizada.finca.nombre}`,
-      descripcion: `Actualización de venta de ${ventaActualizada.estadisticas.totalAnimales} ${ventaActualizada.tipoAnimales}`,
-      fecha: new Date(),
-      tipo: 'venta',
-      lugar: ventaActualizada.finca.ubicacion,
-      detalles: {
-        ventaId: ventaActualizada._id,
-        fincaId: ventaActualizada.finca._id,
-        fincaNombre: ventaActualizada.finca.nombre,
-        cambios: req.body
-      },
-      usuarioId: req.user.uid,
-      referenciaId: ventaActualizada._id,
-      referenciaTipo: 'venta'
-    });
-    
-    res.status(200).json(ventaActualizada);
+    res.json(ventas);
   } catch (error) {
-    res.status(500).json({ message: 'Error al actualizar la venta', error });
+    console.error('Error al obtener las ventas:', error);
+    res.status(500).json({
+      mensaje: 'Error al obtener las ventas',
+      error: error.message
+    });
   }
 };
 
-// Eliminar una venta
-exports.deleteVenta = async (req, res) => {
+// Obtener una venta específica
+exports.getVentaById = async (req, res) => {
   try {
-    const ventaEliminada = await Venta.findByIdAndDelete(req.params.id)
-      .populate('finca', 'nombre ubicacion');
+    const { id } = req.params;
+    const venta = await Venta.findById(id).lean();
     
-    if (!ventaEliminada) {
-      return res.status(404).json({ message: 'Venta no encontrada' });
+    if (!venta) {
+      return res.status(404).json({ mensaje: 'Venta no encontrada' });
     }
-
-    // Crear evento automático para la eliminación
-    await crearEventoAutomatico({
-      titulo: `Eliminación de Venta en ${ventaEliminada.finca.nombre}`,
-      descripcion: `Eliminación de venta de ${ventaEliminada.estadisticas.totalAnimales} ${ventaEliminada.tipoAnimales}`,
-      fecha: new Date(),
-      tipo: 'venta',
-      lugar: ventaEliminada.finca.ubicacion,
-      detalles: {
-        ventaId: ventaEliminada._id,
-        fincaId: ventaEliminada.finca._id,
-        fincaNombre: ventaEliminada.finca.nombre,
-        comprador: ventaEliminada.comprador,
-        totalAnimales: ventaEliminada.estadisticas.totalAnimales,
-        valorTotal: ventaEliminada.estadisticas.valorTotal
-      },
-      usuarioId: req.user.uid,
-      referenciaId: ventaEliminada._id,
-      referenciaTipo: 'venta'
-    });
     
-    res.status(200).json({ message: 'Venta eliminada correctamente' });
+    // Convertir las fechas a strings ISO
+    const ventaFormateada = {
+      ...venta,
+      fecha: venta.fecha.toISOString(),
+      createdAt: venta.createdAt.toISOString(),
+      updatedAt: venta.updatedAt.toISOString()
+    };
+    
+    res.json(ventaFormateada);
   } catch (error) {
-    res.status(500).json({ message: 'Error al eliminar la venta', error });
+    console.error('Error al obtener la venta:', error);
+    res.status(500).json({
+      mensaje: 'Error al obtener la venta',
+      error: error.message
+    });
   }
 }; 

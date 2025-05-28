@@ -1,5 +1,5 @@
 const Subasta = require('../models/Subasta');
-const { crearEventoAutomatico } = require('./eventoController');
+const agendaController = require('./agendaController');
 
 // Obtener todas las subastas
 exports.getSubastas = async (req, res) => {
@@ -39,20 +39,19 @@ exports.createSubasta = async (req, res) => {
     
     const subastaGuardada = await nuevaSubasta.save();
 
-    // Crear evento automático para la nueva subasta
-    await crearEventoAutomatico({
-      titulo: `Nueva Subasta: ${subastaGuardada.nombre}`,
-      descripcion: `Se ha creado una nueva subasta en ${subastaGuardada.ubicacion}`,
+    // Crear evento en la agenda
+    await agendaController.crearEventoDesdeModulo({
       fecha: new Date(),
       tipo: 'subasta',
+      subtipo: 'nueva',
+      titulo: `Nueva Subasta: ${subastaGuardada.nombre}`,
+      descripcion: `Se ha creado una nueva subasta en ${subastaGuardada.ubicacion}`,
       lugar: subastaGuardada.ubicacion,
-      detalles: {
-        subastaId: subastaGuardada._id,
-        nombre: subastaGuardada.nombre
+      referencia: {
+        tipo: 'subasta',
+        id: subastaGuardada._id
       },
-      usuarioId: req.user.uid,
-      referenciaId: subastaGuardada._id,
-      referenciaTipo: 'subasta'
+      usuarioId: req.user.uid
     });
     
     res.status(201).json(subastaGuardada);
@@ -74,22 +73,31 @@ exports.updateSubasta = async (req, res) => {
       return res.status(404).json({ message: 'Subasta no encontrada' });
     }
 
-    // Crear evento automático para la actualización
-    await crearEventoAutomatico({
-      titulo: `Actualización de Subasta: ${subastaActualizada.nombre}`,
-      descripcion: `Se ha actualizado la subasta en ${subastaActualizada.ubicacion}`,
-      fecha: new Date(),
-      tipo: 'subasta',
-      lugar: subastaActualizada.ubicacion,
-      detalles: {
-        subastaId: subastaActualizada._id,
-        nombre: subastaActualizada.nombre,
-        cambios: req.body
-      },
-      usuarioId: req.user.uid,
-      referenciaId: subastaActualizada._id,
-      referenciaTipo: 'subasta'
-    });
+    // Si hay nuevos movimientos, crear eventos para cada uno
+    if (req.body.historialMovimientos) {
+      const nuevosMovimientos = req.body.historialMovimientos.filter(
+        mov => !subastaActualizada.historialMovimientos.some(
+          m => m.fecha.getTime() === new Date(mov.fecha).getTime() && 
+               m.tipoMovimiento === mov.tipoMovimiento
+        )
+      );
+
+      for (const movimiento of nuevosMovimientos) {
+        await agendaController.crearEventoDesdeModulo({
+          fecha: new Date(movimiento.fecha),
+          tipo: 'subasta',
+          subtipo: movimiento.tipoMovimiento,
+          titulo: `${movimiento.tipoMovimiento.toUpperCase()} en Subasta: ${subastaActualizada.nombre}`,
+          descripcion: `Movimiento de ${movimiento.cantidad} ${movimiento.grupo} - ${movimiento.tipo}`,
+          lugar: subastaActualizada.ubicacion,
+          referencia: {
+            tipo: 'subasta',
+            id: subastaActualizada._id
+          },
+          usuarioId: req.user.uid
+        });
+      }
+    }
     
     res.status(200).json(subastaActualizada);
   } catch (error) {
@@ -107,22 +115,6 @@ exports.deleteSubasta = async (req, res) => {
     if (!subastaEliminada) {
       return res.status(404).json({ message: 'Subasta no encontrada' });
     }
-
-    // Crear evento automático para la eliminación
-    await crearEventoAutomatico({
-      titulo: `Eliminación de Subasta: ${subastaEliminada.nombre}`,
-      descripcion: `Se ha eliminado la subasta en ${subastaEliminada.ubicacion}`,
-      fecha: new Date(),
-      tipo: 'subasta',
-      lugar: subastaEliminada.ubicacion,
-      detalles: {
-        subastaId: subastaEliminada._id,
-        nombre: subastaEliminada.nombre
-      },
-      usuarioId: req.user.uid,
-      referenciaId: subastaEliminada._id,
-      referenciaTipo: 'subasta'
-    });
     
     res.status(200).json({ message: 'Subasta eliminada correctamente' });
   } catch (error) {
