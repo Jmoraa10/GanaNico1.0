@@ -57,7 +57,11 @@ exports.getEventosPendientes = async (req, res) => {
 exports.marcarEventoCumplido = async (req, res) => {
   try {
     const { id } = req.params;
-    const evento = await Evento.findByIdAndUpdate(id, { estado: 'completado' }, { new: true });
+    const { registradoPor, detallesCumplimiento } = req.body;
+    const update = { estado: 'completado' };
+    if (registradoPor) update.registradoPor = registradoPor;
+    if (detallesCumplimiento) update.detallesCumplimiento = detallesCumplimiento;
+    const evento = await Evento.findByIdAndUpdate(id, update, { new: true });
     if (!evento) {
       return res.status(404).json({ message: 'Evento no encontrado' });
     }

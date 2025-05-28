@@ -76,5 +76,14 @@ export const agendaService = {
       console.error('Error al marcar evento como cumplido:', error);
       throw error;
     }
+  },
+
+  async marcarEventoCumplidoConDetalles(eventoId: string, registradoPor: string, detallesCumplimiento: string): Promise<void> {
+    try {
+      await API.put(`/agenda/${eventoId}/cumplido`, { registradoPor, detallesCumplimiento });
+    } catch (error) {
+      console.error('Error al registrar cumplimiento:', error);
+      throw error;
+    }
   }
 }; 

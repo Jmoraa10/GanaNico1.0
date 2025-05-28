@@ -26,6 +26,10 @@ const AgendaScreen: React.FC = () => {
   const [errorForm, setErrorForm] = useState<string>('');
   const [eventosPendientes, setEventosPendientes] = useState<EventoAgenda[]>([]);
   const printRef = useRef<HTMLDivElement>(null);
+  const [cumplirEventoId, setCumplirEventoId] = useState<string | null>(null);
+  const [cumplirRegistradoPor, setCumplirRegistradoPor] = useState('');
+  const [cumplirDetalles, setCumplirDetalles] = useState('');
+  const [cumplirError, setCumplirError] = useState('');
 
   useEffect(() => {
     cargarEventosMes();
@@ -34,10 +38,11 @@ const AgendaScreen: React.FC = () => {
 
   const cargarEventosMes = async () => {
     const eventos = await agendaService.getEventosPorMes(
-      currentDate.getMonth() + 1,
-      currentDate.getFullYear()
+      currentDate.getFullYear(),
+      currentDate.getMonth() + 1
     );
     setEventos(eventos);
+    console.log('EVENTOS DEL MES:', eventos);
   };
 
   const cargarEventosDia = async (fecha: string) => {
@@ -122,7 +127,9 @@ const AgendaScreen: React.FC = () => {
   const getEventosDelDia = (dia: number) => {
     if (!dia) return [];
     const fecha = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-    return eventos.filter(evento => evento.fecha === fecha);
+    const eventosDelDia = eventos.filter(evento => evento.fecha === fecha);
+    console.log('FECHA:', fecha, 'EVENTOS DEL DIA:', eventosDelDia);
+    return eventosDelDia;
   };
 
   const getColorTipo = (tipo: string) => {
@@ -192,17 +199,36 @@ const AgendaScreen: React.FC = () => {
     if (typeof evento.descripcion === 'string' && evento.descripcion.trim() !== '') return evento.descripcion;
     if (typeof evento.detallesTexto === 'string' && evento.detallesTexto.trim() !== '') return evento.detallesTexto;
     if (typeof evento.detalles === 'string' && (evento.detalles as string).trim() !== '') return evento.detalles as string;
-    if (typeof evento.detalles === 'object' && evento.detalles !== null) return JSON.stringify(evento.detalles);
-    return '';
+    if (typeof evento.detalles === 'object' && evento.detalles !== null && Object.keys(evento.detalles).length > 0) return JSON.stringify(evento.detalles);
+    return 'Sin descripción';
   };
 
-  const marcarCumplido = async (eventoId: string) => {
+  const abrirModalCumplido = (eventoId: string) => {
+    setCumplirEventoId(eventoId);
+    setCumplirRegistradoPor('');
+    setCumplirDetalles('');
+    setCumplirError('');
+  };
+
+  const cerrarModalCumplido = () => {
+    setCumplirEventoId(null);
+    setCumplirRegistradoPor('');
+    setCumplirDetalles('');
+    setCumplirError('');
+  };
+
+  const guardarCumplido = async () => {
+    if (!cumplirRegistradoPor.trim() || !cumplirDetalles.trim()) {
+      setCumplirError('Por favor, completa todos los campos.');
+      return;
+    }
     try {
-      await agendaService.marcarEventoCumplido(eventoId);
+      await agendaService.marcarEventoCumplidoConDetalles(cumplirEventoId!, cumplirRegistradoPor, cumplirDetalles);
+      cerrarModalCumplido();
       cargarEventosPendientes();
       cargarEventosMes();
     } catch (error) {
-      alert('Error al marcar como cumplido.');
+      setCumplirError('Error al registrar cumplimiento.');
     }
   };
 
@@ -289,6 +315,9 @@ const AgendaScreen: React.FC = () => {
                       )}
                     </div>
                     <div className="space-y-1">
+                      {getEventosDelDia(dia).length === 0 && (
+                        <div className="text-xs text-gray-400 italic">Sin eventos</div>
+                      )}
                       {getEventosDelDia(dia).slice(0, 2).map((evento, idx) => (
                         <div
                           key={idx}
@@ -333,7 +362,7 @@ const AgendaScreen: React.FC = () => {
                     const vencimientoDate = new Date(evento.fechaVencimiento);
                     diasRestantes = Math.ceil((vencimientoDate.getTime() - hoyDate.getTime()) / (1000 * 60 * 60 * 24));
                   }
-                  const alerta = diasRestantes !== null && diasRestantes <= 3;
+                  const alerta = diasRestantes !== null && diasRestantes <= 3 && evento.estado !== 'completado';
                   return (
                     <li key={idx} className={`flex flex-col md:flex-row md:items-center justify-between border rounded-lg p-4 evento ${evento.estado === 'completado' ? 'border-green-600 bg-green-50' : alerta ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-white'}`}>
                       <div>
@@ -368,7 +397,7 @@ const AgendaScreen: React.FC = () => {
                         )}
                         {evento.estado !== 'completado' && (
                           <button
-                            onClick={() => marcarCumplido(evento._id!)}
+                            onClick={() => abrirModalCumplido(evento._id!)}
                             className="mt-2 bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition-colors font-semibold shadow-md"
                           >
                             Cumplido
@@ -532,6 +561,51 @@ const AgendaScreen: React.FC = () => {
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Crear Evento
+              </button>
+            </div>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Modal de cumplimiento */}
+      <Dialog open={!!cumplirEventoId} onClose={cerrarModalCumplido} className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="flex items-center justify-center min-h-screen">
+          <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
+          <div className="relative bg-white rounded-lg max-w-md w-full mx-4 p-6">
+            <Dialog.Title className="text-2xl font-bold mb-4">Registrar Cumplimiento</Dialog.Title>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Registrado por</label>
+                <input
+                  type="text"
+                  value={cumplirRegistradoPor}
+                  onChange={e => setCumplirRegistradoPor(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Detalles del cumplimiento</label>
+                <textarea
+                  value={cumplirDetalles}
+                  onChange={e => setCumplirDetalles(e.target.value)}
+                  rows={3}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                />
+              </div>
+              {cumplirError && <div className="text-red-600 text-center font-semibold">{cumplirError}</div>}
+            </div>
+            <div className="mt-6 flex justify-end space-x-4">
+              <button
+                onClick={cerrarModalCumplido}
+                className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={guardarCumplido}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Guardar
               </button>
             </div>
           </div>

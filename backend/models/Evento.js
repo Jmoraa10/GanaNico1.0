@@ -9,6 +9,8 @@ const EventoSchema = new mongoose.Schema({
   fechaVencimiento: { type: String },
   estado: { type: String, enum: ['pendiente', 'completado', 'vencido'], default: 'pendiente' },
   detalles: { type: Object, default: {} },
+  registradoPor: { type: String },
+  detallesCumplimiento: { type: String },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Evento', EventoSchema); 
