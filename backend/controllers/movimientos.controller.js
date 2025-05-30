@@ -1,6 +1,5 @@
 const MovimientoGanado = require('../models/MovimientoGanado');
 const Finca = require('../models/Finca');
-const agendaController = require('./agendaController');
 
 // Obtener todos los movimientos
 exports.getMovimientos = async (req, res) => {
@@ -56,21 +55,6 @@ exports.createMovimiento = async (req, res) => {
     finca.movimientosGanado.push(movimientoGuardado._id);
     await finca.save();
 
-    // Crear evento en la agenda
-    await agendaController.crearEventoDesdeModulo({
-      fecha: new Date(),
-      tipo: 'finca',
-      subtipo: tipo,
-      titulo: `Movimiento de Ganado: ${tipo}`,
-      descripcion: `${cantidad} animales - ${detalles || 'Sin detalles'}`,
-      lugar: finca.nombre,
-      referencia: {
-        tipo: 'movimiento',
-        id: movimientoGuardado._id
-      },
-      usuarioId: req.user.uid
-    });
-
     res.status(201).json(movimientoGuardado);
   } catch (error) {
     console.error('Error al crear movimiento:', error);
@@ -99,22 +83,6 @@ exports.updateMovimiento = async (req, res) => {
     movimiento.animales = animales;
 
     const movimientoActualizado = await movimiento.save();
-
-    // Actualizar evento en la agenda
-    await agendaController.crearEventoDesdeModulo({
-      fecha: new Date(),
-      tipo: 'finca',
-      subtipo: 'actualizacion',
-      titulo: `Actualización de Movimiento: ${tipo}`,
-      descripcion: `Movimiento actualizado - ${cantidad} animales - ${detalles || 'Sin detalles'}`,
-      lugar: movimiento.procedencia || movimiento.destino,
-      referencia: {
-        tipo: 'movimiento',
-        id: movimientoActualizado._id
-      },
-      usuarioId: req.user.uid
-    });
-
     res.status(200).json(movimientoActualizado);
   } catch (error) {
     console.error('Error al actualizar movimiento:', error);
@@ -140,21 +108,6 @@ exports.deleteMovimiento = async (req, res) => {
       { movimientosGanado: id },
       { $pull: { movimientosGanado: id } }
     );
-
-    // Crear evento de eliminación en la agenda
-    await agendaController.crearEventoDesdeModulo({
-      fecha: new Date(),
-      tipo: 'finca',
-      subtipo: 'eliminacion',
-      titulo: `Eliminación de Movimiento: ${movimiento.tipo}`,
-      descripcion: `Movimiento eliminado - ${movimiento.cantidad} animales`,
-      lugar: movimiento.procedencia || movimiento.destino,
-      referencia: {
-        tipo: 'movimiento',
-        id: id
-      },
-      usuarioId: req.user.uid
-    });
 
     res.status(200).json({ message: 'Movimiento eliminado correctamente' });
   } catch (error) {

@@ -19,7 +19,7 @@ const AgendaScreen: React.FC = () => {
     tipo: 'otros',
     descripcion: '',
     lugar: '',
-    detalles: '',
+    detallesTexto: '',
     fechaVencimiento: '',
   });
   const [fechaPrellenada, setFechaPrellenada] = useState<string | null>(null);
@@ -96,16 +96,19 @@ const AgendaScreen: React.FC = () => {
   const handleNuevoEvento = async () => {
     console.log('DEBUG nuevoEvento:', nuevoEvento);
     // Validación de campos requeridos
-    if (!nuevoEvento.fecha || !nuevoEvento.tipo || !nuevoEvento.detalles || !nuevoEvento.lugar) {
-      setErrorForm(`Faltan datos requeridos: Fecha (${nuevoEvento.fecha}), Tipo (${nuevoEvento.tipo}), Detalles (${nuevoEvento.detalles}), Lugar (${nuevoEvento.lugar})`);
+    if (!nuevoEvento.fecha || !nuevoEvento.tipo || !nuevoEvento.detallesTexto || !nuevoEvento.lugar) {
+      setErrorForm(`Faltan datos requeridos: Fecha (${nuevoEvento.fecha}), Tipo (${nuevoEvento.tipo}), Detalles (${nuevoEvento.detallesTexto}), Lugar (${nuevoEvento.lugar})`);
       return;
     }
     setErrorForm('');
     try {
       const eventoAEnviar = {
-        ...nuevoEvento,
-        descripcion: nuevoEvento.detalles,
-        fechaVencimiento: nuevoEvento.fechaVencimiento ? nuevoEvento.fechaVencimiento : 'sin vencimiento',
+        fecha: nuevoEvento.fecha,
+        tipo: nuevoEvento.tipo,
+        descripcion: nuevoEvento.detallesTexto,
+        lugar: nuevoEvento.lugar,
+        detallesTexto: nuevoEvento.detallesTexto,
+        fechaVencimiento: nuevoEvento.fechaVencimiento ? nuevoEvento.fechaVencimiento : undefined,
       };
       await agendaService.crearEvento(eventoAEnviar);
       setIsNuevoEventoOpen(false);
@@ -115,7 +118,7 @@ const AgendaScreen: React.FC = () => {
         tipo: 'otros',
         descripcion: '',
         lugar: '',
-        detalles: '',
+        detallesTexto: '',
         fechaVencimiento: '',
       });
     } catch (error) {
@@ -198,7 +201,6 @@ const AgendaScreen: React.FC = () => {
   const getDescripcionCorta = (evento: EventoAgenda): string => {
     if (typeof evento.descripcion === 'string' && evento.descripcion.trim() !== '') return evento.descripcion;
     if (typeof evento.detallesTexto === 'string' && evento.detallesTexto.trim() !== '') return evento.detallesTexto;
-    if (typeof evento.detalles === 'string' && (evento.detalles as string).trim() !== '') return evento.detalles as string;
     if (typeof evento.detalles === 'object' && evento.detalles !== null && Object.keys(evento.detalles).length > 0) return JSON.stringify(evento.detalles);
     return 'Sin descripción';
   };
@@ -527,8 +529,8 @@ const AgendaScreen: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700">Detalles</label>
                 <textarea
-                  value={nuevoEvento.detalles}
-                  onChange={(e) => setNuevoEvento({ ...nuevoEvento, detalles: e.target.value })}
+                  value={nuevoEvento.detallesTexto}
+                  onChange={(e) => setNuevoEvento({ ...nuevoEvento, detallesTexto: e.target.value })}
                   rows={3}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />

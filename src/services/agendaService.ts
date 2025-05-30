@@ -21,10 +21,10 @@ export interface EventoAgenda {
 
 export interface NuevoEvento {
   fecha: string;
-  tipo: 'compra' | 'deuda' | 'otros';
+  tipo: 'finca' | 'bodega' | 'venta' | 'subasta' | 'compra' | 'deuda' | 'otros';
   descripcion: string;
   lugar: string;
-  detalles: string;
+  detallesTexto: string;
   fechaVencimiento?: string;
 }
 

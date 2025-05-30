@@ -1,6 +1,5 @@
 const Finca = require('../models/Finca');
 const mongoose = require('mongoose');
-const agendaController = require('./agendaController');
 
 // Obtener todas las fincas
 exports.getFincas = async (req, res) => {
@@ -54,22 +53,6 @@ exports.createFinca = async (req, res) => {
       bodegas: req.body.bodegas || [],  // Inicializar bodegas como un array vacío si no se proporciona
     });
     const fincaGuardada = await nuevaFinca.save();
-
-    // Crear evento en la agenda para la nueva finca
-    await agendaController.crearEventoDesdeModulo({
-      fecha: new Date(),
-      tipo: 'finca',
-      subtipo: 'nueva',
-      titulo: `Nueva Finca: ${fincaGuardada.nombre}`,
-      descripcion: `Se ha creado una nueva finca en ${fincaGuardada.ubicacion}`,
-      lugar: fincaGuardada.ubicacion,
-      referencia: {
-        tipo: 'finca',
-        id: fincaGuardada._id
-      },
-      usuarioId: req.user.uid
-    });
-
     res.status(201).json(fincaGuardada);
   } catch (error) {
     res.status(500).json({ message: 'Error al crear la finca', error });
@@ -79,11 +62,6 @@ exports.createFinca = async (req, res) => {
 // Actualizar una finca
 exports.updateFinca = async (req, res) => {
   try {
-    const fincaAnterior = await Finca.findById(req.params.id);
-    if (!fincaAnterior) {
-      return res.status(404).json({ message: 'Finca no encontrada' });
-    }
-
     const fincaActualizada = await Finca.findByIdAndUpdate(
       req.params.id,
       {
@@ -101,63 +79,9 @@ exports.updateFinca = async (req, res) => {
       },
       { new: true }
     );
-
-    // Verificar cambios en bodegas
-    if (req.body.bodega) {
-      const bodegaAnterior = fincaAnterior.bodega || {};
-      const bodegaNueva = req.body.bodega;
-
-      // Verificar cambios en suministros
-      if (bodegaNueva.suministros) {
-        const suministrosNuevos = bodegaNueva.suministros.filter(
-          nuevo => !bodegaAnterior.suministros?.some(
-            antiguo => antiguo.nombre === nuevo.nombre
-          )
-        );
-
-        for (const suministro of suministrosNuevos) {
-          await agendaController.crearEventoDesdeModulo({
-            fecha: new Date(),
-            tipo: 'bodega',
-            subtipo: 'suministro',
-            titulo: `Nuevo Suministro: ${suministro.nombre}`,
-            descripcion: `Cantidad: ${suministro.cantidad} - ${suministro.esFaltante ? 'FALTANTE' : 'Disponible'}`,
-            lugar: fincaActualizada.nombre,
-            referencia: {
-              tipo: 'finca',
-              id: fincaActualizada._id
-            },
-            usuarioId: req.user.uid
-          });
-        }
-      }
-
-      // Verificar cambios en veterinarios
-      if (bodegaNueva.veterinarios) {
-        const veterinariosNuevos = bodegaNueva.veterinarios.filter(
-          nuevo => !bodegaAnterior.veterinarios?.some(
-            antiguo => antiguo.nombre === nuevo.nombre
-          )
-        );
-
-        for (const veterinario of veterinariosNuevos) {
-          await agendaController.crearEventoDesdeModulo({
-            fecha: new Date(),
-            tipo: 'bodega',
-            subtipo: 'veterinario',
-            titulo: `Nuevo Producto Veterinario: ${veterinario.nombre}`,
-            descripcion: `Cantidad: ${veterinario.cantidad} - ${veterinario.esFaltante ? 'FALTANTE' : 'Disponible'}`,
-            lugar: fincaActualizada.nombre,
-            referencia: {
-              tipo: 'finca',
-              id: fincaActualizada._id
-            },
-            usuarioId: req.user.uid
-          });
-        }
-      }
+    if (!fincaActualizada) {
+      return res.status(404).json({ message: 'Finca no encontrada' });
     }
-
     res.status(200).json(fincaActualizada);
   } catch (error) {
     res.status(500).json({ message: 'Error al actualizar la finca', error });
@@ -171,22 +95,6 @@ exports.deleteFinca = async (req, res) => {
     if (!fincaEliminada) {
       return res.status(404).json({ message: 'Finca no encontrada' });
     }
-
-    // Crear evento de eliminación en la agenda
-    await agendaController.crearEventoDesdeModulo({
-      fecha: new Date(),
-      tipo: 'finca',
-      subtipo: 'eliminacion',
-      titulo: `Eliminación de Finca: ${fincaEliminada.nombre}`,
-      descripcion: `Se ha eliminado la finca ubicada en ${fincaEliminada.ubicacion}`,
-      lugar: fincaEliminada.ubicacion,
-      referencia: {
-        tipo: 'finca',
-        id: fincaEliminada._id
-      },
-      usuarioId: req.user.uid
-    });
-
     res.status(200).json({ message: 'Finca eliminada correctamente' });
   } catch (error) {
     res.status(500).json({ message: 'Error al eliminar la finca', error });

@@ -1,107 +1,72 @@
-const Agenda = require('../models/Agenda');
+const Evento = require('../models/Evento');
 
-// Obtener todos los eventos
-exports.getEventos = async (req, res) => {
+exports.crearEvento = async (req, res) => {
   try {
-    const { fechaInicio, fechaFin, tipo, estado } = req.query;
-    const query = {};
-
-    if (fechaInicio && fechaFin) {
-      query.fecha = {
-        $gte: new Date(fechaInicio),
-        $lte: new Date(fechaFin)
-      };
+    const { fecha, tipo, descripcion, lugar, detalles, detallesTexto, fechaVencimiento } = req.body;
+    if (!fecha || !tipo || !descripcion || !lugar) {
+      return res.status(400).json({ message: 'Faltan campos requeridos: fecha, tipo, descripcion, lugar' });
     }
-
-    if (tipo) query.tipo = tipo;
-    if (estado) query.estado = estado;
-
-    const eventos = await Agenda.find(query)
-      .sort({ fecha: 1 });
-    res.status(200).json(eventos);
+    const evento = new Evento({
+      fecha,
+      tipo,
+      descripcion,
+      lugar,
+      detallesTexto: detallesTexto || detalles || '',
+      fechaVencimiento,
+      estado: 'pendiente',
+      detalles: {},
+    });
+    await evento.save();
+    res.status(201).json(evento);
   } catch (error) {
-    res.status(500).json({ message: 'Error al obtener los eventos', error });
+    res.status(500).json({ message: 'Error al crear evento', error: error.message, stack: error.stack });
   }
 };
 
-// Obtener eventos pendientes por vencer
+exports.getEventosPorMes = async (req, res) => {
+  try {
+    const { anio, mes } = req.params;
+    const regex = new RegExp(`^${anio}-${mes.padStart(2, '0')}`);
+    const eventos = await Evento.find({ fecha: { $regex: regex } });
+    res.json(eventos);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener eventos del mes', error });
+  }
+};
+
+exports.getEventosPorDia = async (req, res) => {
+  try {
+    const { fecha } = req.params;
+    const eventos = await Evento.find({ fecha });
+    res.json(eventos);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener eventos del día', error });
+  }
+};
+
 exports.getEventosPendientes = async (req, res) => {
   try {
-    const hoy = new Date();
-    const eventos = await Agenda.find({
-      estado: 'pendiente',
-      fechaVencimiento: { $lte: hoy }
-    }).sort({ fechaVencimiento: 1 });
-    
-    res.status(200).json(eventos);
+    const hoy = new Date().toISOString().split('T')[0];
+    const eventos = await Evento.find({ estado: 'pendiente', fechaVencimiento: { $gte: hoy } });
+    res.json(eventos);
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener eventos pendientes', error });
   }
 };
 
-// Crear un nuevo evento
-exports.createEvento = async (req, res) => {
+exports.marcarEventoCumplido = async (req, res) => {
   try {
-    const nuevoEvento = new Agenda({
-      ...req.body,
-      usuarioId: req.user.uid
-    });
-    
-    const eventoGuardado = await nuevoEvento.save();
-    res.status(201).json(eventoGuardado);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al crear el evento', error });
-  }
-};
-
-// Actualizar estado de un evento
-exports.updateEstadoEvento = async (req, res) => {
-  try {
-    const { estado, registradoPor, detallesCumplimiento } = req.body;
-    
-    const eventoActualizado = await Agenda.findByIdAndUpdate(
-      req.params.id,
-      {
-        estado,
-        registradoPor,
-        detallesCumplimiento,
-        ...(estado === 'cumplido' && { fechaCumplimiento: new Date() })
-      },
-      { new: true }
-    );
-    
-    if (!eventoActualizado) {
+    const { id } = req.params;
+    const { registradoPor, detallesCumplimiento } = req.body;
+    const update = { estado: 'completado' };
+    if (registradoPor) update.registradoPor = registradoPor;
+    if (detallesCumplimiento) update.detallesCumplimiento = detallesCumplimiento;
+    const evento = await Evento.findByIdAndUpdate(id, update, { new: true });
+    if (!evento) {
       return res.status(404).json({ message: 'Evento no encontrado' });
     }
-    
-    res.status(200).json(eventoActualizado);
+    res.json(evento);
   } catch (error) {
-    res.status(500).json({ message: 'Error al actualizar el evento', error });
-  }
-};
-
-// Eliminar un evento
-exports.deleteEvento = async (req, res) => {
-  try {
-    const eventoEliminado = await Agenda.findByIdAndDelete(req.params.id);
-    
-    if (!eventoEliminado) {
-      return res.status(404).json({ message: 'Evento no encontrado' });
-    }
-    
-    res.status(200).json({ message: 'Evento eliminado correctamente' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al eliminar el evento', error });
-  }
-};
-
-// Función auxiliar para crear eventos desde otros módulos
-exports.crearEventoDesdeModulo = async (datos) => {
-  try {
-    const nuevoEvento = new Agenda(datos);
-    return await nuevoEvento.save();
-  } catch (error) {
-    console.error('Error al crear evento desde módulo:', error);
-    throw error;
+    res.status(500).json({ message: 'Error al marcar evento como cumplido', error });
   }
 }; 

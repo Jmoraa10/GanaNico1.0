@@ -1,5 +1,4 @@
 const Subasta = require('../models/Subasta');
-const agendaController = require('./agendaController');
 
 // Obtener todas las subastas
 exports.getSubastas = async (req, res) => {
@@ -38,22 +37,6 @@ exports.createSubasta = async (req, res) => {
     });
     
     const subastaGuardada = await nuevaSubasta.save();
-
-    // Crear evento en la agenda
-    await agendaController.crearEventoDesdeModulo({
-      fecha: new Date(),
-      tipo: 'subasta',
-      subtipo: 'nueva',
-      titulo: `Nueva Subasta: ${subastaGuardada.nombre}`,
-      descripcion: `Se ha creado una nueva subasta en ${subastaGuardada.ubicacion}`,
-      lugar: subastaGuardada.ubicacion,
-      referencia: {
-        tipo: 'subasta',
-        id: subastaGuardada._id
-      },
-      usuarioId: req.user.uid
-    });
-    
     res.status(201).json(subastaGuardada);
   } catch (error) {
     res.status(500).json({ message: 'Error al crear la subasta', error });
@@ -71,32 +54,6 @@ exports.updateSubasta = async (req, res) => {
     
     if (!subastaActualizada) {
       return res.status(404).json({ message: 'Subasta no encontrada' });
-    }
-
-    // Si hay nuevos movimientos, crear eventos para cada uno
-    if (req.body.historialMovimientos) {
-      const nuevosMovimientos = req.body.historialMovimientos.filter(
-        mov => !subastaActualizada.historialMovimientos.some(
-          m => m.fecha.getTime() === new Date(mov.fecha).getTime() && 
-               m.tipoMovimiento === mov.tipoMovimiento
-        )
-      );
-
-      for (const movimiento of nuevosMovimientos) {
-        await agendaController.crearEventoDesdeModulo({
-          fecha: new Date(movimiento.fecha),
-          tipo: 'subasta',
-          subtipo: movimiento.tipoMovimiento,
-          titulo: `${movimiento.tipoMovimiento.toUpperCase()} en Subasta: ${subastaActualizada.nombre}`,
-          descripcion: `Movimiento de ${movimiento.cantidad} ${movimiento.grupo} - ${movimiento.tipo}`,
-          lugar: subastaActualizada.ubicacion,
-          referencia: {
-            tipo: 'subasta',
-            id: subastaActualizada._id
-          },
-          usuarioId: req.user.uid
-        });
-      }
     }
     
     res.status(200).json(subastaActualizada);
