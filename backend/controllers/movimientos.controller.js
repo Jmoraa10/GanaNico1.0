@@ -1,5 +1,6 @@
 const MovimientoGanado = require('../models/MovimientoGanado');
 const Finca = require('../models/Finca');
+const Evento = require('../models/Evento');
 
 // Obtener todos los movimientos
 exports.getMovimientos = async (req, res) => {
@@ -54,6 +55,18 @@ exports.createMovimiento = async (req, res) => {
     // Agregar el movimiento al historial de la finca
     finca.movimientosGanado.push(movimientoGuardado._id);
     await finca.save();
+
+    // Crear evento en la agenda
+    const evento = new Evento({
+      fecha: new Date().toISOString().split('T')[0],
+      tipo: 'finca',
+      descripcion: `${tipo === 'ingreso' ? 'Ingreso' : 'Salida'} de ganado (${cantidad})`,
+      lugar: finca.nombre || 'Finca',
+      detallesTexto: detalles,
+      registradoPor: registradoPor,
+      detalles: { procedencia, destino, animales },
+    });
+    await evento.save();
 
     res.status(201).json(movimientoGuardado);
   } catch (error) {

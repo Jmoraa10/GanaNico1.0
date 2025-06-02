@@ -1,5 +1,6 @@
 const Venta = require('../models/Venta');
 const Finca = require('../models/Finca');
+const Evento = require('../models/Evento');
 
 // Crear una nueva venta
 exports.crearVenta = async (req, res) => {
@@ -49,6 +50,18 @@ exports.crearVenta = async (req, res) => {
     }
     finca.ventas.push(ventaGuardada._id);
     await finca.save();
+
+    // Crear evento en la agenda
+    const evento = new Evento({
+      fecha: (fecha || new Date()).toISOString().split('T')[0],
+      tipo: 'venta',
+      descripcion: `Venta de ganado (${tipoAnimales}) a ${comprador}`,
+      lugar: destino,
+      detallesTexto: `Valor por kilo: $${valorPorKilo}. Animales: ${animales.length}`,
+      registradoPor: registradoPor,
+      detalles: { animales, estadisticas, movimientosAnimales, movimientosBodega },
+    });
+    await evento.save();
 
     res.status(201).json({
       mensaje: 'Venta registrada exitosamente',
