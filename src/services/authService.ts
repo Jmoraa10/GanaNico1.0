@@ -1,5 +1,6 @@
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { auth } from '../config/firebase';
+import { auth, db } from '../config/firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import api from './api';
 
 interface HealthResponse {
@@ -91,6 +92,20 @@ export const login = async (email: string, password: string) => {
         token: token,
         uid: userCredential.user.uid
       };
+
+      // Verificar si el usuario existe en Firestore
+      const userDocRef = doc(db, 'Users', userCredential.user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      // Si el usuario no existe en Firestore, crearlo con rol por defecto
+      if (!userDoc.exists()) {
+        await setDoc(userDocRef, {
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          role: 'capataz', // Rol por defecto
+          createdAt: new Date().toISOString()
+        });
+      }
 
       // Guardar en localStorage
       localStorage.setItem('user', JSON.stringify(userData));

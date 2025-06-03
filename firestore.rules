@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Función para verificar si el usuario está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Función para verificar si el usuario es admin
+    function isAdmin() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Función para verificar si el usuario es capataz
+    function isCapataz() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role == 'capataz';
+    }
+
+    // Reglas para la colección Users
+    match /Users/{userId} {
+      // Permitir lectura solo al propio usuario
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // Solo los admins pueden escribir
+      allow write: if isAdmin();
+    }
+
+    // Reglas para la colección Fincas
+    match /Fincas/{fincaId} {
+      // Permitir lectura a admins y capataces
+      allow read: if isAuthenticated() && (isAdmin() || isCapataz());
+      // Permitir escritura solo a admins
+      allow write: if isAdmin();
+    }
+
+    // Reglas para otras colecciones (Subastas, Agenda, etc.)
+    match /{document=**} {
+      // Permitir lectura y escritura solo a admins
+      allow read, write: if isAdmin();
+    }
+  }
+} 
