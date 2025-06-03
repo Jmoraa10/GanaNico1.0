@@ -7,6 +7,8 @@ export default function HomeScreen() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  console.log('Usuario actual en HomeScreen:', user);
+
   const allCards = [
     {
       title: "LAS FINCAS",
@@ -39,7 +41,13 @@ export default function HomeScreen() {
   ];
 
   // Filtrar las cards según el rol del usuario
-  const cards = allCards.filter(card => card.allowedRoles.includes(user?.role || 'capataz'));
+  const cards = allCards.filter(card => {
+    const hasAccess = card.allowedRoles.includes(user?.role || 'capataz');
+    console.log(`Card ${card.title}: ${hasAccess ? 'visible' : 'oculta'} para rol ${user?.role}`);
+    return hasAccess;
+  });
+
+  console.log('Cards filtradas:', cards);
 
   return (
     <div
