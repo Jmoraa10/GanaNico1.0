@@ -20,24 +20,26 @@ service cloud.firestore {
 
     // Reglas para la colección Users
     match /Users/{userId} {
-      // Permitir lectura solo al propio usuario
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      // Solo los admins pueden escribir
-      allow write: if isAdmin();
+      // Permitir lectura y escritura al propio usuario
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      // Permitir lectura y escritura a admins
+      allow read, write: if isAdmin();
     }
 
     // Reglas para la colección Fincas
     match /Fincas/{fincaId} {
-      // Permitir lectura a admins y capataces
-      allow read: if isAuthenticated() && (isAdmin() || isCapataz());
+      // Permitir lectura a usuarios autenticados
+      allow read: if isAuthenticated();
       // Permitir escritura solo a admins
       allow write: if isAdmin();
     }
 
-    // Reglas para otras colecciones (Subastas, Agenda, etc.)
+    // Reglas para otras colecciones
     match /{document=**} {
-      // Permitir lectura y escritura solo a admins
-      allow read, write: if isAdmin();
+      // Permitir lectura a usuarios autenticados
+      allow read: if isAuthenticated();
+      // Permitir escritura solo a admins
+      allow write: if isAdmin();
     }
   }
 } 

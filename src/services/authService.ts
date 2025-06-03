@@ -82,34 +82,53 @@ export const login = async (email: string, password: string) => {
     // Configuramos el token en las cabeceras de la API
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     
-    // Verificamos la conexión con el backend
-    const response = await api.get('/auth/verify');
-    
-    // Si la verificación es exitosa, retornamos los datos del usuario
-    if (response.data.authenticated) {
+    try {
+      // Verificamos la conexión con el backend
+      const response = await api.get('/auth/verify');
+      
+      // Si la verificación es exitosa, retornamos los datos del usuario
+      if (response.data.authenticated) {
+        const userData = {
+          email: userCredential.user.email || '',
+          token: token,
+          uid: userCredential.user.uid
+        };
+
+        try {
+          // Verificar si el usuario existe en Firestore
+          const userDocRef = doc(db, 'Users', userCredential.user.uid);
+          const userDoc = await getDoc(userDocRef);
+
+          // Si el usuario no existe en Firestore, crearlo con rol por defecto
+          if (!userDoc.exists()) {
+            await setDoc(userDocRef, {
+              uid: userCredential.user.uid,
+              email: userCredential.user.email,
+              role: 'capataz', // Rol por defecto
+              createdAt: new Date().toISOString()
+            });
+          }
+
+          // Guardar en localStorage
+          localStorage.setItem('user', JSON.stringify(userData));
+          
+          return { user: userData };
+        } catch (firestoreError) {
+          console.error('Error al manejar el documento de usuario:', firestoreError);
+          // Aún así permitimos el login si falla la creación del documento
+          localStorage.setItem('user', JSON.stringify(userData));
+          return { user: userData };
+        }
+      }
+    } catch (apiError) {
+      console.error('Error al verificar con el backend:', apiError);
+      // Si falla la verificación con el backend, aún permitimos el login
       const userData = {
         email: userCredential.user.email || '',
         token: token,
         uid: userCredential.user.uid
       };
-
-      // Verificar si el usuario existe en Firestore
-      const userDocRef = doc(db, 'Users', userCredential.user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      // Si el usuario no existe en Firestore, crearlo con rol por defecto
-      if (!userDoc.exists()) {
-        await setDoc(userDocRef, {
-          uid: userCredential.user.uid,
-          email: userCredential.user.email,
-          role: 'capataz', // Rol por defecto
-          createdAt: new Date().toISOString()
-        });
-      }
-
-      // Guardar en localStorage
       localStorage.setItem('user', JSON.stringify(userData));
-      
       return { user: userData };
     }
     
@@ -128,6 +147,7 @@ export const login = async (email: string, password: string) => {
       case 'auth/too-many-requests':
         throw new Error('Demasiados intentos fallidos. Por favor, intente más tarde.');
       default:
+        console.error('Error de autenticación:', error);
         throw new Error('Error al iniciar sesión. Por favor, intente nuevamente.');
     }
   }
