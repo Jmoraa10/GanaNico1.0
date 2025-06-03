@@ -20,14 +20,34 @@ import AnimalesConsolidadoScreen from '../pages/Consolidado/AnimalesConsolidadoS
 import SubastasConsolidadoScreen from '../pages/Consolidado/SubastasConsolidadoScreen';
 import BodegasConsolidadoScreen from '../pages/Consolidado/BodegasConsolidadoScreen';
 import AgendaScreen from '../pages/AgendaScreen';
+import { useAuth } from '../contexts/AuthContext';
 
 const isAuthenticated = () => {
   const user = localStorage.getItem('user');
   return !!user;
 };
 
-const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return isAuthenticated() ? <>{children}</> : <Navigate to="/login" replace />;
+interface PrivateRouteProps {
+  children: React.ReactNode;
+  allowedRoles?: ('admin' | 'capataz')[];
+}
+
+const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, allowedRoles }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/home" replace />;
+  }
+
+  return <>{children}</>;
 };
 
 const AppRoutes: React.FC = () => {
@@ -46,7 +66,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/fincas"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin', 'capataz']}>
             <FincasScreen />
           </PrivateRoute>
         }
@@ -54,7 +74,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/fincas/nueva"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin', 'capataz']}>
             <FincasForm />
           </PrivateRoute>
         }
@@ -62,7 +82,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/fincas/editar/:id"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin', 'capataz']}>
             <FincasForm />
           </PrivateRoute>
         }
@@ -70,7 +90,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/fincas/:id"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin', 'capataz']}>
             <FincasDetalleScreen />
           </PrivateRoute>
         }
@@ -78,7 +98,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/fincas/:id/bodega/editar"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin', 'capataz']}>
             <BodegaEditForm />
           </PrivateRoute>
         }
@@ -86,7 +106,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/fincas/:id/movimientos/animales"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin', 'capataz']}>
             <MovimientosAnimales />
           </PrivateRoute>
         }
@@ -94,7 +114,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/fincas/:id/movimientos/bodega"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin', 'capataz']}>
             <MovimientosBodega />
           </PrivateRoute>
         }
@@ -102,7 +122,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/fincas/:id/venta"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin', 'capataz']}>
             <VentaGanado />
           </PrivateRoute>
         }
@@ -110,7 +130,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/fincas/:id/ventas-reporte"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin', 'capataz']}>
             <VentaReporte />
           </PrivateRoute>
         }
@@ -134,7 +154,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/subastas"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin']}>
             <SubastasScreen />
           </PrivateRoute>
         }
@@ -142,7 +162,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/subastas/:id"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin']}>
             <SubastaDetalleScreen />
           </PrivateRoute>
         }
@@ -150,7 +170,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/consolidado"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin']}>
             <ConsolidadoScreen />
           </PrivateRoute>
         }
@@ -158,7 +178,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/consolidado/animales"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin']}>
             <AnimalesConsolidadoScreen />
           </PrivateRoute>
         }
@@ -166,7 +186,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/consolidado/subastas"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin']}>
             <SubastasConsolidadoScreen />
           </PrivateRoute>
         }
@@ -174,7 +194,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/consolidado/bodegas"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin']}>
             <BodegasConsolidadoScreen />
           </PrivateRoute>
         }
@@ -182,7 +202,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/agenda"
         element={
-          <PrivateRoute>
+          <PrivateRoute allowedRoles={['admin']}>
             <AgendaScreen />
           </PrivateRoute>
         }

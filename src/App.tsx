@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import AppRoutes from './routes';
 import { usePageLoader } from './hooks/usePageLoader';
 import LoadingScreen from './pages/LoadingScreen';
+import { AuthProvider } from './contexts/AuthContext';
 
 const AppWithLoader: React.FC = () => {
   const loading = usePageLoader();
@@ -12,7 +13,9 @@ const AppWithLoader: React.FC = () => {
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <AppWithLoader />
+      <AuthProvider>
+        <AppWithLoader />
+      </AuthProvider>
     </BrowserRouter>
   );
 };

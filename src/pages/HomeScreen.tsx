@@ -1,36 +1,45 @@
 import { motion } from "framer-motion";
 import { Tractor, Hammer, BarChart, LogOut, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function HomeScreen() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const cards = [
+  const allCards = [
     {
       title: "LAS FINCAS",
       icon: <Tractor size={40} className="text-white" />,
       path: "/fincas",
       description: "HERMOSA EMPRESA FAMILIAR",
+      allowedRoles: ['admin', 'capataz']
     },
     {
       title: "SUBASTAS",
       icon: <Hammer size={40} className="text-white" />,
       path: "/subastas",
       description: "Gestión de subastas de ganado",
+      allowedRoles: ['admin']
     },
     {
       title: "Consolidado de Datos",
       icon: <BarChart size={40} className="text-white" />,
       path: "/consolidado",
       description: "Reportes y análisis completos",
+      allowedRoles: ['admin']
     },
     {
       title: "AGENDA",
       icon: <Calendar size={40} className="text-white" />,
       path: "/agenda",
       description: "Gestión de eventos y actividades",
+      allowedRoles: ['admin']
     },
   ];
+
+  // Filtrar las cards según el rol del usuario
+  const cards = allCards.filter(card => card.allowedRoles.includes(user?.role || 'capataz'));
 
   return (
     <div
