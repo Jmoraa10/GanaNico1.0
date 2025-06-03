@@ -3,7 +3,7 @@ import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { FirebaseApp } from 'firebase/app';
-import { app } from '../firebaseConfig';
+import app from '../config/firebase';
 
 // Inicializar servicios de Firebase con manejo de errores
 let auth: Auth;

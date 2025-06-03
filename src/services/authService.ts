@@ -1,5 +1,5 @@
-import { getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import '../firebaseConfig';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { auth } from '../config/firebase';
 import api from './api';
 
 interface HealthResponse {
@@ -69,7 +69,7 @@ export const checkHealth = async (): Promise<HealthResponse> => {
 export const login = async (email: string, password: string) => {
   try {
     // Primero intentamos autenticar con Firebase
-    const userCredential = await signInWithEmailAndPassword(getAuth(), email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
     
     // Obtenemos el token de Firebase
     const token = await userCredential.user.getIdToken();
@@ -120,7 +120,7 @@ export const login = async (email: string, password: string) => {
 
 export const logout = async () => {
   try {
-    await signOut(getAuth());
+    await signOut(auth);
     localStorage.clear();
     delete api.defaults.headers.common['Authorization'];
     return true;
