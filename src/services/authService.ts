@@ -3,6 +3,12 @@ import { auth, db } from '../config/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import api from './api';
 
+// Lista de emails que serán administradores por defecto
+const ADMIN_EMAILS = [
+  'johanmora.jm@gmail.com',
+  // Agrega aquí otros emails de administradores
+];
+
 interface HealthResponse {
   status: string;
   message?: string;
@@ -99,12 +105,15 @@ export const login = async (email: string, password: string) => {
           const userDocRef = doc(db, 'Users', userCredential.user.uid);
           const userDoc = await getDoc(userDocRef);
 
-          // Si el usuario no existe en Firestore, crearlo con rol por defecto
+          // Si el usuario no existe en Firestore, crearlo con el rol apropiado
           if (!userDoc.exists()) {
+            const userEmail = userCredential.user.email || '';
+            const role = ADMIN_EMAILS.includes(userEmail) ? 'admin' : 'capataz';
+            
             await setDoc(userDocRef, {
               uid: userCredential.user.uid,
-              email: userCredential.user.email,
-              role: 'capataz', // Rol por defecto
+              email: userEmail,
+              role: role,
               createdAt: new Date().toISOString()
             });
           }
@@ -174,6 +183,19 @@ export const checkAuth = async () => {
     return response.data.authenticated;
   } catch (error) {
     return false;
+  }
+};
+
+export const updateUserRole = async (userId: string, newRole: 'admin' | 'capataz') => {
+  try {
+    const userDocRef = doc(db, 'Users', userId);
+    await setDoc(userDocRef, {
+      role: newRole
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error('Error al actualizar el rol del usuario:', error);
+    throw new Error('No se pudo actualizar el rol del usuario');
   }
 };
 
