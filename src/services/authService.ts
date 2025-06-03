@@ -105,17 +105,15 @@ export const login = async (email: string, password: string) => {
           const userDocRef = doc(db, 'Users', userCredential.user.uid);
           const userDoc = await getDoc(userDocRef);
 
-          // Si el usuario no existe en Firestore, crearlo con el rol apropiado
-          if (!userDoc.exists()) {
-            const userEmail = userCredential.user.email || '';
-            const role = ADMIN_EMAILS.includes(userEmail) ? 'admin' : 'capataz';
-            
+          // Si el usuario no existe en Firestore o si es un email de administrador, actualizar/crear con rol admin
+          const userEmail = userCredential.user.email || '';
+          if (!userDoc.exists() || ADMIN_EMAILS.includes(userEmail)) {
             await setDoc(userDocRef, {
               uid: userCredential.user.uid,
               email: userEmail,
-              role: role,
+              role: ADMIN_EMAILS.includes(userEmail) ? 'admin' : 'capataz',
               createdAt: new Date().toISOString()
-            });
+            }, { merge: true });
           }
 
           // Guardar en localStorage

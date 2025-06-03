@@ -1,45 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Función para verificar si el usuario está autenticado
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    // Función para verificar si el usuario es admin
-    function isAdmin() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role == 'admin';
-    }
-    
-    // Función para verificar si el usuario es capataz
-    function isCapataz() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role == 'capataz';
-    }
-
-    // Reglas para la colección Users
-    match /Users/{userId} {
-      // Permitir lectura y escritura al propio usuario
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
-      // Permitir lectura y escritura a admins
-      allow read, write: if isAdmin();
-    }
-
-    // Reglas para la colección Fincas
-    match /Fincas/{fincaId} {
-      // Permitir lectura a usuarios autenticados
-      allow read: if isAuthenticated();
-      // Permitir escritura solo a admins
-      allow write: if isAdmin();
-    }
-
-    // Reglas para otras colecciones
+    // Permitir acceso a todos los documentos mientras el usuario esté autenticado
     match /{document=**} {
-      // Permitir lectura a usuarios autenticados
-      allow read: if isAuthenticated();
-      // Permitir escritura solo a admins
-      allow write: if isAdmin();
+      allow read, write: if request.auth != null;
     }
   }
 } 
