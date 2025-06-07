@@ -225,12 +225,34 @@ const AgendaScreen: React.FC = () => {
       return;
     }
     try {
-      await agendaService.marcarEventoCumplidoConDetalles(cumplirEventoId!, cumplirRegistradoPor, cumplirDetalles);
+      
+      // Actualizar el evento en el array de eventos del día seleccionado
+      setEventosDiaSeleccionado(eventos => 
+        eventos.map(evento => 
+          evento._id === cumplirEventoId 
+            ? { ...evento, estado: 'completado', registradoPor: cumplirRegistradoPor, detallesCumplimiento: cumplirDetalles }
+            : evento
+        )
+      );
+
+      // Actualizar el evento en el array de eventos del mes
+      setEventos(eventos => 
+        eventos.map(evento => 
+          evento._id === cumplirEventoId 
+            ? { ...evento, estado: 'completado', registradoPor: cumplirRegistradoPor, detallesCumplimiento: cumplirDetalles }
+            : evento
+        )
+      );
+
+      // Actualizar el evento en el array de eventos pendientes
+      setEventosPendientes(eventos => 
+        eventos.filter(evento => evento._id !== cumplirEventoId)
+      );
+
       cerrarModalCumplido();
-      cargarEventosPendientes();
-      cargarEventosMes();
     } catch (error) {
       setCumplirError('Error al registrar cumplimiento.');
+      console.error('Error al marcar evento como cumplido:', error);
     }
   };
 
@@ -323,9 +345,14 @@ const AgendaScreen: React.FC = () => {
                       {getEventosDelDia(dia).slice(0, 2).map((evento, idx) => (
                         <div
                           key={idx}
-                          className={`text-xs p-1 rounded ${getColorTipo(evento.tipo)} text-white truncate flex items-center`}
+                          className={`text-xs p-1 rounded ${evento.estado === 'completado' ? 'bg-green-500' : getColorTipo(evento.tipo)} text-white truncate flex items-center`}
                           title={getDescripcionCorta(evento)}
                         >
+                          {evento.estado === 'completado' && (
+                            <svg className="w-3 h-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
                           {getDescripcionCorta(evento)}
                         </div>
                       ))}
@@ -431,12 +458,20 @@ const AgendaScreen: React.FC = () => {
 
             <div className="space-y-4">
               {eventosDiaSeleccionado.map((evento, index) => (
-                <div key={index} className="border rounded-lg p-4">
+                <div key={index} className={`border rounded-lg p-4 ${evento.estado === 'completado' ? 'bg-green-50 border-green-200' : ''}`}>
                   <div className="flex items-center justify-between mb-2">
                     <span className={`px-2 py-1 rounded text-sm text-white ${getColorTipo(evento.tipo)}`}>
                       {evento.tipo}
                     </span>
-                    {evento.fechaVencimiento && (
+                    {evento.estado === 'completado' && (
+                      <span className="text-sm text-green-600 font-semibold flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Cumplido
+                      </span>
+                    )}
+                    {evento.fechaVencimiento && evento.estado !== 'completado' && (
                       <span className="text-sm text-gray-500 flex items-center">
                         Vence: {new Date(evento.fechaVencimiento).toLocaleDateString('es')}
                         {evento.estado === 'pendiente' && evento.fechaVencimiento >= hoy && (
@@ -448,6 +483,24 @@ const AgendaScreen: React.FC = () => {
                   <h3 className="font-semibold">{evento.descripcion}</h3>
                   <p className="text-gray-600 mt-1">{evento.lugar}</p>
                   <p className="text-gray-600 mt-1">{evento.detallesTexto}</p>
+                  {evento.estado === 'completado' && (
+                    <div className="mt-3 pt-3 border-t border-green-200">
+                      <p className="text-sm text-green-700">
+                        <span className="font-semibold">Registrado por:</span> {evento.registradoPor}
+                      </p>
+                      <p className="text-sm text-green-700 mt-1">
+                        <span className="font-semibold">Detalles del cumplimiento:</span> {evento.detallesCumplimiento}
+                      </p>
+                    </div>
+                  )}
+                  {evento.estado !== 'completado' && (
+                    <button
+                      onClick={() => abrirModalCumplido(evento._id!)}
+                      className="mt-3 bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition-colors font-semibold shadow-md"
+                    >
+                      Marcar como cumplido
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

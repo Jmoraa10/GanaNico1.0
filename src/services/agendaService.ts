@@ -17,6 +17,8 @@ export interface EventoAgenda {
     valor?: number;
     [key: string]: any;
   };
+  registradoPor?: string;
+  detallesCumplimiento?: string;
 }
 
 export interface NuevoEvento {
