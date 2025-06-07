@@ -71,6 +71,16 @@ export const agendaService = {
     }
   },
 
+  async getEventosCumplidos(): Promise<EventoAgenda[]> {
+    try {
+      const response = await API.get('/agenda/cumplidos');
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener eventos cumplidos:', error);
+      return [];
+    }
+  },
+
   async marcarEventoCumplido(eventoId: string): Promise<void> {
     try {
       await API.put(`/agenda/${eventoId}/cumplido`);

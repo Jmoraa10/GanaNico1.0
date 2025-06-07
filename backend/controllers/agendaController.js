@@ -69,4 +69,13 @@ exports.marcarEventoCumplido = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Error al marcar evento como cumplido', error });
   }
+};
+
+exports.getEventosCumplidos = async (req, res) => {
+  try {
+    const eventos = await Evento.find({ estado: 'completado' }).sort({ fecha: -1 });
+    res.json(eventos);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener eventos cumplidos', error });
+  }
 }; 

@@ -25,15 +25,20 @@ const AgendaScreen: React.FC = () => {
   const [fechaPrellenada, setFechaPrellenada] = useState<string | null>(null);
   const [errorForm, setErrorForm] = useState<string>('');
   const [eventosPendientes, setEventosPendientes] = useState<EventoAgenda[]>([]);
+  const [eventosCumplidos, setEventosCumplidos] = useState<EventoAgenda[]>([]);
   const printRef = useRef<HTMLDivElement>(null);
+  const printRefCumplidos = useRef<HTMLDivElement>(null);
   const [cumplirEventoId, setCumplirEventoId] = useState<string | null>(null);
   const [cumplirRegistradoPor, setCumplirRegistradoPor] = useState('');
   const [cumplirDetalles, setCumplirDetalles] = useState('');
   const [cumplirError, setCumplirError] = useState('');
+  const [eventoSeleccionado, setEventoSeleccionado] = useState<EventoAgenda | null>(null);
+  const [isModalDetallesOpen, setIsModalDetallesOpen] = useState(false);
 
   useEffect(() => {
     cargarEventosMes();
     cargarEventosPendientes();
+    cargarEventosCumplidos();
   }, [currentDate]);
 
   const cargarEventosMes = async () => {
@@ -54,6 +59,11 @@ const AgendaScreen: React.FC = () => {
   const cargarEventosPendientes = async () => {
     const pendientes = await agendaService.getEventosPendientes();
     setEventosPendientes(pendientes);
+  };
+
+  const cargarEventosCumplidos = async () => {
+    const cumplidos = await agendaService.getEventosCumplidos();
+    setEventosCumplidos(cumplidos);
   };
 
   const cambiarMes = (incremento: number) => {
@@ -197,6 +207,47 @@ const AgendaScreen: React.FC = () => {
     }
   };
 
+  const handlePrintCumplidos = () => {
+    if (!printRefCumplidos.current) return;
+    const printContents = printRefCumplidos.current.innerHTML;
+    const printWindow = window.open('', '', 'height=800,width=1000');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Eventos Cumplidos - Inversiones Bonito Viento SAS</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 40px; }
+              .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+              .logo { height: 60px; }
+              .empresa { font-size: 2rem; font-weight: bold; color: #14532d; }
+              .fecha { font-size: 1rem; color: #555; }
+              .evento { border-bottom: 1px solid #ccc; padding: 12px 0; }
+              .evento:last-child { border-bottom: none; }
+              .titulo { font-size: 1.1rem; font-weight: bold; color: #222; }
+              .cumplido { color: #15803d; font-weight: bold; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <img src="/assets/images/logo.png" class="logo" alt="Logo" />
+              <div class="empresa">INVERSIONES BONITO VIENTO SAS</div>
+              <div class="fecha">${new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+            </div>
+            <h2 style="font-size:1.5rem; color:#15803d; margin-bottom:20px;">Eventos Cumplidos</h2>
+            <div>${printContents}</div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 500);
+    }
+  };
+
   // Función para obtener la descripción corta de un evento
   const getDescripcionCorta = (evento: EventoAgenda): string => {
     if (typeof evento.descripcion === 'string' && evento.descripcion.trim() !== '') return evento.descripcion;
@@ -254,6 +305,11 @@ const AgendaScreen: React.FC = () => {
       setCumplirError('Error al registrar cumplimiento.');
       console.error('Error al marcar evento como cumplido:', error);
     }
+  };
+
+  const abrirModalDetalles = (evento: EventoAgenda) => {
+    setEventoSeleccionado(evento);
+    setIsModalDetallesOpen(true);
   };
 
   return (
@@ -436,6 +492,126 @@ const AgendaScreen: React.FC = () => {
                     </li>
                   );
                 })}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-10 bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-xl">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+              <svg className="w-6 h-6 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Eventos Cumplidos
+            </h2>
+            <button
+              onClick={handlePrintCumplidos}
+              className="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition-colors font-semibold shadow-md"
+            >
+              Imprimir
+            </button>
+          </div>
+          <div ref={printRefCumplidos}>
+            {eventosCumplidos.length === 0 ? (
+              <p className="text-gray-500">No hay eventos cumplidos.</p>
+            ) : (
+              <ul className="space-y-4">
+                {eventosCumplidos.map((evento, idx) => (
+                  <li key={idx} className="flex flex-col md:flex-row md:items-center justify-between border border-green-200 rounded-lg p-4 bg-green-50">
+                    <div>
+                      <div className="font-semibold text-lg text-gray-800 flex items-center titulo">
+                        {getDescripcionCorta(evento)}
+                        <span className="ml-2 text-green-700 font-bold">Cumplido</span>
+                      </div>
+                      <div className="text-gray-600 text-sm">Lugar: {evento.lugar}</div>
+                      <div className="text-gray-600 text-sm">Tipo: {evento.tipo}</div>
+                      <div className="text-green-700 text-sm mt-1">
+                        <span className="font-semibold">Registrado por:</span> {evento.registradoPor}
+                      </div>
+                      <div className="text-green-700 text-sm">
+                        <span className="font-semibold">Detalles del cumplimiento:</span> {evento.detallesCumplimiento}
+                      </div>
+                    </div>
+                    <div className="mt-2 md:mt-0 flex space-x-2">
+                      <button
+                        onClick={() => abrirModalDetalles(evento)}
+                        className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-md"
+                      >
+                        Detalles
+                      </button>
+                      <button
+                        onClick={() => {
+                          const printWindow = window.open('', '', 'height=800,width=1000');
+                          if (printWindow) {
+                            printWindow.document.write(`
+                              <html>
+                                <head>
+                                  <title>Detalles del Evento - Inversiones Bonito Viento SAS</title>
+                                  <style>
+                                    body { font-family: Arial, sans-serif; margin: 40px; }
+                                    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+                                    .logo { height: 60px; }
+                                    .empresa { font-size: 2rem; font-weight: bold; color: #14532d; }
+                                    .fecha { font-size: 1rem; color: #555; }
+                                    .evento { border: 1px solid #ccc; padding: 20px; border-radius: 8px; }
+                                    .titulo { font-size: 1.2rem; font-weight: bold; color: #222; margin-bottom: 16px; }
+                                    .campo { margin-bottom: 8px; }
+                                    .label { font-weight: bold; color: #555; }
+                                    .valor { color: #222; }
+                                  </style>
+                                </head>
+                                <body>
+                                  <div class="header">
+                                    <img src="/assets/images/logo.png" class="logo" alt="Logo" />
+                                    <div class="empresa">INVERSIONES BONITO VIENTO SAS</div>
+                                    <div class="fecha">${new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+                                  </div>
+                                  <div class="evento">
+                                    <div class="titulo">Detalles del Evento Cumplido</div>
+                                    <div class="campo">
+                                      <span class="label">Descripción:</span>
+                                      <span class="valor"> ${evento.descripcion}</span>
+                                    </div>
+                                    <div class="campo">
+                                      <span class="label">Tipo:</span>
+                                      <span class="valor"> ${evento.tipo}</span>
+                                    </div>
+                                    <div class="campo">
+                                      <span class="label">Lugar:</span>
+                                      <span class="valor"> ${evento.lugar}</span>
+                                    </div>
+                                    <div class="campo">
+                                      <span class="label">Fecha:</span>
+                                      <span class="valor"> ${new Date(evento.fecha).toLocaleDateString('es-ES')}</span>
+                                    </div>
+                                    <div class="campo">
+                                      <span class="label">Registrado por:</span>
+                                      <span class="valor"> ${evento.registradoPor}</span>
+                                    </div>
+                                    <div class="campo">
+                                      <span class="label">Detalles del cumplimiento:</span>
+                                      <span class="valor"> ${evento.detallesCumplimiento}</span>
+                                    </div>
+                                  </div>
+                                </body>
+                              </html>
+                            `);
+                            printWindow.document.close();
+                            printWindow.focus();
+                            setTimeout(() => {
+                              printWindow.print();
+                              printWindow.close();
+                            }, 500);
+                          }
+                        }}
+                        className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition-colors font-semibold shadow-md"
+                      >
+                        Imprimir
+                      </button>
+                    </div>
+                  </li>
+                ))}
               </ul>
             )}
           </div>
@@ -661,6 +837,58 @@ const AgendaScreen: React.FC = () => {
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
               >
                 Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Modal de detalles del evento */}
+      <Dialog
+        open={isModalDetallesOpen}
+        onClose={() => setIsModalDetallesOpen(false)}
+        className="fixed inset-0 z-50 overflow-y-auto"
+      >
+        <div className="flex items-center justify-center min-h-screen">
+          <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
+          <div className="relative bg-white rounded-lg max-w-2xl w-full mx-4 p-6">
+            <Dialog.Title className="text-2xl font-bold mb-4">
+              Detalles del Evento
+            </Dialog.Title>
+            {eventoSeleccionado && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className={`px-2 py-1 rounded text-sm text-white ${getColorTipo(eventoSeleccionado.tipo)}`}>
+                    {eventoSeleccionado.tipo}
+                  </span>
+                  <span className="text-sm text-green-600 font-semibold flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Cumplido
+                  </span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">{eventoSeleccionado.descripcion}</h3>
+                  <p className="text-gray-600 mt-1">Lugar: {eventoSeleccionado.lugar}</p>
+                  <p className="text-gray-600 mt-1">Fecha: {new Date(eventoSeleccionado.fecha).toLocaleDateString('es-ES')}</p>
+                  <div className="mt-3 pt-3 border-t border-green-200">
+                    <p className="text-green-700">
+                      <span className="font-semibold">Registrado por:</span> {eventoSeleccionado.registradoPor}
+                    </p>
+                    <p className="text-green-700 mt-1">
+                      <span className="font-semibold">Detalles del cumplimiento:</span> {eventoSeleccionado.detallesCumplimiento}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setIsModalDetallesOpen(false)}
+                className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cerrar
               </button>
             </div>
           </div>
