@@ -22,10 +22,6 @@ import BodegasConsolidadoScreen from '../pages/Consolidado/BodegasConsolidadoScr
 import AgendaScreen from '../pages/AgendaScreen';
 import { useAuth } from '../contexts/AuthContext';
 
-const isAuthenticated = () => {
-  const user = localStorage.getItem('user');
-  return !!user;
-};
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -210,11 +206,9 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/"
         element={
-          isAuthenticated() ? (
+          <PrivateRoute>
             <Navigate to="/home" replace />
-          ) : (
-            <Navigate to="/login" replace />
-          )
+          </PrivateRoute>
         }
       />
       <Route path="*" element={<div>Página no encontrada</div>} />

@@ -26,64 +26,81 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          // Obtener el rol del usuario desde Firestore
-          const userDoc = await getDoc(doc(db, 'Users', firebaseUser.uid));
-          const userData = userDoc.data();
-          
-          console.log('Datos del usuario en Firestore:', userData);
-          
-          // Lista de emails que serán administradores por defecto
-          const ADMIN_EMAILS = [
-            'johanmora.jm@gmail.com',
-            'mora.castro.raul@gmail.com'
-          ];
-
-          const userEmail = firebaseUser.email || '';
-          const role = ADMIN_EMAILS.includes(userEmail) ? 'admin' : (userData?.role || 'capataz');
-          
-          console.log('Email del usuario:', userEmail);
-          console.log('Rol asignado:', role);
-
-          setUser({
-            uid: firebaseUser.uid,
-            email: userEmail,
-            role: role
-          });
-
-          // Si el usuario es admin por email pero no en Firestore, actualizar Firestore
-          if (ADMIN_EMAILS.includes(userEmail) && userData?.role !== 'admin') {
-            await setDoc(doc(db, 'Users', firebaseUser.uid), {
-              uid: firebaseUser.uid,
-              email: userEmail,
-              role: 'admin',
-              updatedAt: new Date().toISOString()
-            }, { merge: true });
-            console.log('Rol actualizado a admin en Firestore');
-          }
-        } catch (error) {
-          console.error('Error al obtener datos del usuario:', error);
-          // En caso de error, asignar rol por email
-          const userEmail = firebaseUser.email || '';
-          const ADMIN_EMAILS = [
-            'johanmora.jm@gmail.com',
-            'mora.castro.raul@gmail.com'
-          ];
-          setUser({
-            uid: firebaseUser.uid,
-            email: userEmail,
-            role: ADMIN_EMAILS.includes(userEmail) ? 'admin' : 'capataz'
-          });
+    const checkInitialAuth = async () => {
+      try {
+        const userData = localStorage.getItem('user');
+        if (!userData) {
+          setUser(null);
+          setLoading(false);
+          return;
         }
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
 
-    return () => unsubscribe();
+        const parsedData = JSON.parse(userData);
+        if (!parsedData.token) {
+          localStorage.removeItem('user');
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+          if (firebaseUser) {
+            try {
+              const userDoc = await getDoc(doc(db, 'Users', firebaseUser.uid));
+              const userData = userDoc.data();
+              
+              const ADMIN_EMAILS = [
+                'johanmora.jm@gmail.com',
+                'mora.castro.raul@gmail.com'
+              ];
+
+              const userEmail = firebaseUser.email || '';
+              const role = ADMIN_EMAILS.includes(userEmail) ? 'admin' : (userData?.role || 'capataz');
+
+              setUser({
+                uid: firebaseUser.uid,
+                email: userEmail,
+                role: role
+              });
+
+              if (ADMIN_EMAILS.includes(userEmail) && userData?.role !== 'admin') {
+                await setDoc(doc(db, 'Users', firebaseUser.uid), {
+                  uid: firebaseUser.uid,
+                  email: userEmail,
+                  role: 'admin',
+                  updatedAt: new Date().toISOString()
+                }, { merge: true });
+              }
+            } catch (error) {
+              console.error('Error al obtener datos del usuario:', error);
+              const userEmail = firebaseUser.email || '';
+              const ADMIN_EMAILS = [
+                'johanmora.jm@gmail.com',
+                'mora.castro.raul@gmail.com'
+              ];
+              setUser({
+                uid: firebaseUser.uid,
+                email: userEmail,
+                role: ADMIN_EMAILS.includes(userEmail) ? 'admin' : 'capataz'
+              });
+            }
+          } else {
+            localStorage.removeItem('user');
+            setUser(null);
+          }
+          setLoading(false);
+        });
+
+        return () => unsubscribe();
+      } catch (error) {
+        console.error('Error en la verificación inicial:', error);
+        localStorage.removeItem('user');
+        setUser(null);
+        setLoading(false);
+      }
+    };
+
+    checkInitialAuth();
   }, []);
 
   return (

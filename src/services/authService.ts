@@ -25,7 +25,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.clear();
+      // Limpiar datos de autenticación
+      localStorage.removeItem('user');
+      delete api.defaults.headers.common['Authorization'];
+      
+      // Redirigir al login
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -173,13 +177,22 @@ export const logout = async () => {
 
 export const checkAuth = async () => {
   try {
-    const token = await getAuthToken();
-    if (!token) return false;
+    const userData = localStorage.getItem('user');
+    if (!userData) return false;
     
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    const parsedData = JSON.parse(userData);
+    if (!parsedData.token) return false;
+    
+    // Configurar el token en las cabeceras
+    api.defaults.headers.common['Authorization'] = `Bearer ${parsedData.token}`;
+    
+    // Verificar el token con el backend
     const response = await api.get('/auth/verify');
     return response.data.authenticated;
   } catch (error) {
+    console.error('Error al verificar autenticación:', error);
+    // Si hay error, limpiar el localStorage y retornar false
+    localStorage.removeItem('user');
     return false;
   }
 };
