@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../services/authService'; // Asegúrate que este servicio existe
 import { motion } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
 
 const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -9,6 +10,14 @@ const LoginScreen: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false); // Estado para indicar carga
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Si ya hay un usuario autenticado, redirigir a home
+  React.useEffect(() => {
+    if (user) {
+      navigate('/home', { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,8 +32,10 @@ const LoginScreen: React.FC = () => {
         throw new Error('Error en la respuesta del servidor');
       }
 
-      // Redirigir a home
-      navigate('/home', { replace: true });
+      // Esperar un momento para asegurar que el estado se actualice
+      setTimeout(() => {
+        navigate('/home', { replace: true });
+      }, 100);
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message || 'Credenciales inválidas o error de red.');

@@ -26,24 +26,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkInitialAuth = async () => {
+    let unsubscribe: () => void;
+
+    const initializeAuth = async () => {
       try {
-        const userData = localStorage.getItem('user');
-        if (!userData) {
-          setUser(null);
-          setLoading(false);
-          return;
-        }
-
-        const parsedData = JSON.parse(userData);
-        if (!parsedData.token) {
-          localStorage.removeItem('user');
-          setUser(null);
-          setLoading(false);
-          return;
-        }
-
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
           if (firebaseUser) {
             try {
               const userDoc = await getDoc(doc(db, 'Users', firebaseUser.uid));
@@ -57,11 +44,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const userEmail = firebaseUser.email || '';
               const role = ADMIN_EMAILS.includes(userEmail) ? 'admin' : (userData?.role || 'capataz');
 
-              setUser({
+              const newUser = {
                 uid: firebaseUser.uid,
                 email: userEmail,
                 role: role
-              });
+              };
+
+              setUser(newUser);
 
               if (ADMIN_EMAILS.includes(userEmail) && userData?.role !== 'admin') {
                 await setDoc(doc(db, 'Users', firebaseUser.uid), {
@@ -85,22 +74,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               });
             }
           } else {
-            localStorage.removeItem('user');
             setUser(null);
+            localStorage.removeItem('user');
           }
           setLoading(false);
         });
-
-        return () => unsubscribe();
       } catch (error) {
-        console.error('Error en la verificación inicial:', error);
-        localStorage.removeItem('user');
+        console.error('Error en la inicialización de autenticación:', error);
         setUser(null);
+        localStorage.removeItem('user');
         setLoading(false);
       }
     };
 
-    checkInitialAuth();
+    initializeAuth();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   return (
