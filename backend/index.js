@@ -92,19 +92,13 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // Verificar si el origen está en la lista de dominios permitidos
-    const isAllowed = allowedDomains.some(domain => 
-      origin === domain || 
-      origin.startsWith(domain) || 
-      (domain.includes('localhost') && (origin.includes('localhost:') || origin.includes('127.0.0.1:')))
-    );
-
-    if (isAllowed) {
+    // Solo permite coincidencia exacta
+    if (allowedDomains.includes(origin)) {
       console.log('✅ CORS permitido para:', origin);
-      callback(null, true);
+      return callback(null, true);
     } else {
       console.log('⚠️ CORS bloqueado para:', origin);
-      callback(new Error('Not allowed by CORS'));
+      return callback(new Error('Not allowed by CORS'));
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
