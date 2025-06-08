@@ -1,6 +1,6 @@
 const Venta = require('../models/Venta');
 const Finca = require('../models/Finca');
-const Evento = require('../models/Evento');
+const eventoService = require('../services/eventoService');
 
 // Crear una nueva venta
 exports.crearVenta = async (req, res) => {
@@ -25,7 +25,7 @@ exports.crearVenta = async (req, res) => {
       return res.status(404).json({ mensaje: 'Finca no encontrada' });
     }
 
-    // Crear la venta con la fecha proporcionada o la fecha actual
+    // Crear la venta
     const venta = new Venta({
       finca: fincaId,
       comprador,
@@ -51,17 +51,24 @@ exports.crearVenta = async (req, res) => {
     finca.ventas.push(ventaGuardada._id);
     await finca.save();
 
-    // Crear evento en la agenda
-    const evento = new Evento({
+    // Crear evento en la agenda usando el servicio centralizado
+    const eventoData = {
       fecha: (fecha || new Date()).toISOString().split('T')[0],
-      tipo: 'venta',
       descripcion: `Venta de ganado (${tipoAnimales}) a ${comprador}`,
       lugar: destino,
       detallesTexto: `Valor por kilo: $${valorPorKilo}. Animales: ${animales.length}`,
       registradoPor: registradoPor,
-      detalles: { animales, estadisticas, movimientosAnimales, movimientosBodega },
-    });
-    await evento.save();
+      detalles: { 
+        animales, 
+        estadisticas, 
+        movimientosAnimales, 
+        movimientosBodega,
+        fincaId: finca._id,
+        fincaNombre: finca.nombre
+      }
+    };
+
+    await eventoService.crearEventoVenta(eventoData);
 
     res.status(201).json({
       mensaje: 'Venta registrada exitosamente',

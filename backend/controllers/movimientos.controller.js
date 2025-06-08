@@ -1,6 +1,7 @@
 const MovimientoGanado = require('../models/MovimientoGanado');
 const Finca = require('../models/Finca');
 const Evento = require('../models/Evento');
+const eventoService = require('../services/eventoService');
 
 // Obtener todos los movimientos
 exports.getMovimientos = async (req, res) => {
@@ -31,8 +32,14 @@ exports.createMovimiento = async (req, res) => {
   try {
     const { fincaId, tipo, cantidad, detalles, registradoPor, procedencia, destino, animales } = req.body;
 
+    // Actualizar la finca con el nuevo movimiento
+    const finca = await Finca.findById(fincaId);
+    if (!finca) {
+      return res.status(404).json({ message: 'Finca no encontrada' });
+    }
+
     // Crear el nuevo movimiento
-    const nuevoMovimiento = new MovimientoGanado({
+    const nuevoMovimiento = {
       tipo,
       cantidad,
       detalles,
@@ -41,34 +48,34 @@ exports.createMovimiento = async (req, res) => {
       destino,
       animales,
       fecha: new Date()
-    });
-
-    // Guardar el movimiento
-    const movimientoGuardado = await nuevoMovimiento.save();
-
-    // Actualizar la finca con el nuevo movimiento
-    const finca = await Finca.findById(fincaId);
-    if (!finca) {
-      return res.status(404).json({ message: 'Finca no encontrada' });
-    }
+    };
 
     // Agregar el movimiento al historial de la finca
-    finca.movimientosGanado.push(movimientoGuardado._id);
+    if (!finca.movimientosGanado) {
+      finca.movimientosGanado = [];
+    }
+    finca.movimientosGanado.push(nuevoMovimiento);
     await finca.save();
 
-    // Crear evento en la agenda
-    const evento = new Evento({
+    // Crear evento en la agenda usando el servicio centralizado
+    const eventoData = {
       fecha: new Date().toISOString().split('T')[0],
-      tipo: 'finca',
       descripcion: `${tipo === 'ingreso' ? 'Ingreso' : 'Salida'} de ganado (${cantidad})`,
       lugar: finca.nombre || 'Finca',
       detallesTexto: detalles,
       registradoPor: registradoPor,
-      detalles: { procedencia, destino, animales },
-    });
-    await evento.save();
+      detalles: { 
+        procedencia, 
+        destino, 
+        animales,
+        fincaId: finca._id,
+        fincaNombre: finca.nombre
+      }
+    };
 
-    res.status(201).json(movimientoGuardado);
+    await eventoService.crearEventoFinca(eventoData);
+
+    res.status(201).json(nuevoMovimiento);
   } catch (error) {
     console.error('Error al crear movimiento:', error);
     res.status(500).json({ message: 'Error al crear el movimiento', error: error.message });

@@ -1,4 +1,5 @@
 const Subasta = require('../models/Subasta');
+const eventoService = require('../services/eventoService');
 
 // Obtener todas las subastas
 exports.getSubastas = async (req, res) => {
@@ -76,5 +77,55 @@ exports.deleteSubasta = async (req, res) => {
     res.status(200).json({ message: 'Subasta eliminada correctamente' });
   } catch (error) {
     res.status(500).json({ message: 'Error al eliminar la subasta', error });
+  }
+};
+
+exports.crearMovimiento = async (req, res) => {
+  try {
+    const { subastaId, movimiento } = req.body;
+    const subasta = await Subasta.findById(subastaId);
+    
+    if (!subasta) {
+      return res.status(404).json({ message: 'Subasta no encontrada' });
+    }
+
+    // Agregar el movimiento al historial
+    subasta.historialMovimientos.push(movimiento);
+    await subasta.save();
+
+    // Crear evento en la agenda según el tipo de movimiento
+    let eventoData = {
+      fecha: movimiento.fecha,
+      descripcion: '',
+      lugar: subasta.ubicacion,
+      detallesTexto: '',
+      registradoPor: movimiento.registradoPor || 'Sistema',
+      detalles: movimiento
+    };
+
+    switch (movimiento.tipoMovimiento) {
+      case 'venta':
+        eventoData.descripcion = `Venta en subasta: ${movimiento.tipo} (${movimiento.cantidad} unidades)`;
+        eventoData.detallesTexto = `Valor base: $${movimiento.valorBase}. Porcentaje: ${movimiento.porcentajeSubasta}%`;
+        await eventoService.crearEventoSubasta(eventoData);
+        break;
+
+      case 'compra':
+        eventoData.descripcion = `Compra en subasta: ${movimiento.tipo} (${movimiento.cantidad} unidades)`;
+        eventoData.detallesTexto = `Valor base: $${movimiento.valorBase}. Porcentaje: ${movimiento.porcentajeSubasta}%`;
+        await eventoService.crearEventoSubasta(eventoData);
+        break;
+
+      case 'pago':
+        eventoData.descripcion = `Pago en subasta: $${movimiento.valor}`;
+        eventoData.detallesTexto = movimiento.descripcion || 'Pago registrado';
+        await eventoService.crearEventoSubasta(eventoData);
+        break;
+    }
+
+    res.status(201).json(subasta);
+  } catch (error) {
+    console.error('Error al crear movimiento:', error);
+    res.status(500).json({ message: 'Error al crear el movimiento', error: error.message });
   }
 }; 
