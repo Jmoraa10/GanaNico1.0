@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 
 interface UserFormData {
@@ -12,11 +12,20 @@ interface UserFormData {
   name: string;
 }
 
+interface User {
+  uid: string;
+  email: string;
+  name: string;
+  role: string;
+  createdAt: string;
+}
+
 const CreateUserScreen: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
   const [formData, setFormData] = useState<UserFormData>({
     email: '',
     password: '',
@@ -24,6 +33,42 @@ const CreateUserScreen: React.FC = () => {
     role: 'capataz',
     name: ''
   });
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const usersCollection = collection(db, 'Users');
+      const usersSnapshot = await getDocs(usersCollection);
+      const usersList = usersSnapshot.docs.map(doc => doc.data() as User);
+      setUsers(usersList);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setError('Error al cargar los usuarios');
+    }
+  };
+
+  const handleDeleteUser = async (uid: string) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Eliminar el documento de Firestore
+      await deleteDoc(doc(db, 'Users', uid));
+      // Actualizar la lista de usuarios
+      setUsers(users.filter(user => user.uid !== uid));
+      setSuccess('Usuario eliminado exitosamente');
+    } catch (error) {
+      console.error('Error al eliminar usuario:', error);
+      setError('Error al eliminar el usuario');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -198,6 +243,43 @@ const CreateUserScreen: React.FC = () => {
               </div>
             </form>
           </div>
+        </div>
+      </div>
+
+      {/* Lista de Usuarios */}
+      <div className="mt-8 max-w-4xl mx-auto px-4">
+        <h3 className="text-xl font-semibold text-gray-700 mb-4">Usuarios Existentes</h3>
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {users.map((user) => (
+                <tr key={user.uid}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <button
+                      onClick={() => handleDeleteUser(user.uid)}
+                      className="text-red-600 hover:text-red-900"
+                      disabled={loading}
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

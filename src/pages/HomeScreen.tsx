@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Tractor, Hammer, BarChart, LogOut, Calendar, Truck } from "lucide-react";
+import { Tractor, Hammer, BarChart, LogOut, Calendar, Truck, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -70,17 +70,29 @@ export default function HomeScreen() {
         <h1 className="text-2xl md:text-3xl font-rio text-green-900">
           EMPRESA GANADERA FAMILIAR
         </h1>
-        <motion.button
-          onClick={() => {
-            localStorage.removeItem("idToken");
-            navigate("/login");
-          }}
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-xl transition-colors duration-300 shadow-md"
-          whileHover={{ scale: 1.05 }}
-        >
-          <LogOut size={20} />
-          Cerrar sesión
-        </motion.button>
+        <div className="flex gap-4">
+          {user?.role === 'admin' && (
+            <motion.button
+              onClick={() => navigate("/create-user")}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-xl transition-colors duration-300 shadow-md"
+              whileHover={{ scale: 1.05 }}
+            >
+              <UserPlus size={20} />
+              Crear Usuario
+            </motion.button>
+          )}
+          <motion.button
+            onClick={() => {
+              localStorage.removeItem("idToken");
+              navigate("/login");
+            }}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-xl transition-colors duration-300 shadow-md"
+            whileHover={{ scale: 1.05 }}
+          >
+            <LogOut size={20} />
+            Cerrar sesión
+          </motion.button>
+        </div>
       </div>
 
       {/* Título principal */}

@@ -6,7 +6,8 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 interface User {
   uid: string;
   email: string | null;
-  role: 'admin' | 'capataz';
+  role: 'admin' | 'capataz' | 'camionero';
+  name?: string;
 }
 
 interface AuthContextType {
@@ -46,12 +47,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ];
 
               const userEmail = firebaseUser.email || '';
-              const role = ADMIN_EMAILS.includes(userEmail) ? 'admin' : (userData?.role || 'capataz');
+              let role: 'admin' | 'capataz' | 'camionero';
+
+              if (ADMIN_EMAILS.includes(userEmail)) {
+                role = 'admin';
+              } else if (userData?.role) {
+                role = userData.role;
+              } else {
+                role = 'capataz';
+              }
 
               const newUser = {
                 uid: firebaseUser.uid,
                 email: userEmail,
-                role: role
+                role: role,
+                name: userData?.name
               };
 
               // Guardar en localStorage solo si tenemos un token válido
@@ -60,7 +70,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 localStorage.setItem('user', JSON.stringify({
                   uid: firebaseUser.uid,
                   email: userEmail,
-                  token: token
+                  token: token,
+                  role: role,
+                  name: userData?.name
                 }));
                 setUser(newUser);
               } else {
@@ -73,6 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   uid: firebaseUser.uid,
                   email: userEmail,
                   role: 'admin',
+                  name: userData?.name,
                   updatedAt: new Date().toISOString()
                 }, { merge: true });
               }

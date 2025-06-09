@@ -27,7 +27,7 @@ import CreateUserScreen from '../pages/CreateUserScreen';
 
 interface PrivateRouteProps {
   children: React.ReactNode;
-  allowedRoles?: ('admin' | 'capataz')[];
+  allowedRoles?: ('admin' | 'capataz' | 'camionero')[];
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, allowedRoles }) => {
