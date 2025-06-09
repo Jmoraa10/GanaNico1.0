@@ -90,7 +90,11 @@ const transporteSchema = new mongoose.Schema({
     enum: ['EN_CURSO', 'CULMINADO'],
     default: 'EN_CURSO'
   },
-  horaCulminacion: Date
+  horaCulminacion: Date,
+  duracionViaje: {
+    type: Number, // duración en minutos
+    default: 0
+  }
 }, {
   timestamps: true
 });
@@ -101,7 +105,8 @@ transporteSchema.methods.calcularResumen = function() {
     totalAnimales: 0,
     resumenAnimales: {},
     totalSuministros: 0,
-    totalGastos: 0
+    totalGastos: 0,
+    duracionViaje: 0
   };
 
   // Calcular totales de animales
@@ -120,8 +125,23 @@ transporteSchema.methods.calcularResumen = function() {
   // Calcular totales de gastos
   resumen.totalGastos = this.gastos.diesel + this.gastos.peajes + this.gastos.viaticos;
 
+  // Calcular duración del viaje si está culminado
+  if (this.estado === 'CULMINADO' && this.horaCulminacion) {
+    const inicio = new Date(this.horaInicio);
+    const fin = new Date(this.horaCulminacion);
+    resumen.duracionViaje = Math.round((fin - inicio) / (1000 * 60)); // duración en minutos
+  }
+
   return resumen;
 };
+
+// Middleware para actualizar la duración del viaje cuando se marca como culminado
+transporteSchema.pre('save', function(next) {
+  if (this.isModified('estado') && this.estado === 'CULMINADO' && !this.horaCulminacion) {
+    this.horaCulminacion = new Date();
+  }
+  next();
+});
 
 const Transporte = mongoose.model('Transporte', transporteSchema);
 
