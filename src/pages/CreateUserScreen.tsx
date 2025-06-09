@@ -54,12 +54,9 @@ const CreateUserScreen: React.FC = () => {
     if (!window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
       return;
     }
-
     try {
       setLoading(true);
-      // Eliminar el documento de Firestore
       await deleteDoc(doc(db, 'Users', uid));
-      // Actualizar la lista de usuarios
       setUsers(users.filter(user => user.uid !== uid));
       setSuccess('Usuario eliminado exitosamente');
     } catch (error) {
@@ -83,25 +80,18 @@ const CreateUserScreen: React.FC = () => {
     setError('');
     setSuccess('');
     setLoading(true);
-
     try {
-      // Validaciones
       if (formData.password !== formData.confirmPassword) {
         throw new Error('Las contraseñas no coinciden');
       }
-
       if (formData.password.length < 6) {
         throw new Error('La contraseña debe tener al menos 6 caracteres');
       }
-
-      // Crear usuario en Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
-
-      // Crear documento en Firestore
       await setDoc(doc(db, 'Users', userCredential.user.uid), {
         uid: userCredential.user.uid,
         email: formData.email,
@@ -109,7 +99,6 @@ const CreateUserScreen: React.FC = () => {
         role: formData.role,
         createdAt: new Date().toISOString()
       });
-
       setSuccess('Usuario creado exitosamente');
       setFormData({
         email: '',
@@ -118,6 +107,7 @@ const CreateUserScreen: React.FC = () => {
         role: 'capataz',
         name: ''
       });
+      fetchUsers();
     } catch (error: any) {
       console.error('Error al crear usuario:', error);
       switch (error.code) {
@@ -139,124 +129,121 @@ const CreateUserScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-      <div className="relative py-3 sm:max-w-xl sm:mx-auto">
-        <div className="relative px-4 py-10 bg-white mx-8 md:mx-0 shadow rounded-3xl sm:p-10">
-          <div className="max-w-md mx-auto">
-            <div className="flex items-center space-x-5">
-              <div className="block pl-2 font-semibold text-xl text-gray-700">
-                <h2 className="leading-relaxed">Crear Nuevo Usuario</h2>
-              </div>
-            </div>
-            <form onSubmit={handleSubmit} className="divide-y divide-gray-200">
-              <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
-                <div className="flex flex-col">
-                  <label className="leading-loose">Nombre Completo</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="px-4 py-2 border focus:ring-gray-500 focus:border-gray-900 w-full sm:text-sm border-gray-300 rounded-md focus:outline-none text-gray-600"
-                    placeholder="Nombre del usuario"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label className="leading-loose">Correo Electrónico</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="px-4 py-2 border focus:ring-gray-500 focus:border-gray-900 w-full sm:text-sm border-gray-300 rounded-md focus:outline-none text-gray-600"
-                    placeholder="correo@ejemplo.com"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label className="leading-loose">Contraseña</label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    className="px-4 py-2 border focus:ring-gray-500 focus:border-gray-900 w-full sm:text-sm border-gray-300 rounded-md focus:outline-none text-gray-600"
-                    placeholder="••••••••"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label className="leading-loose">Confirmar Contraseña</label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    required
-                    className="px-4 py-2 border focus:ring-gray-500 focus:border-gray-900 w-full sm:text-sm border-gray-300 rounded-md focus:outline-none text-gray-600"
-                    placeholder="••••••••"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <label className="leading-loose">Rol</label>
-                  <select
-                    name="role"
-                    value={formData.role}
-                    onChange={handleChange}
-                    required
-                    className="px-4 py-2 border focus:ring-gray-500 focus:border-gray-900 w-full sm:text-sm border-gray-300 rounded-md focus:outline-none text-gray-600"
-                  >
-                    <option value="capataz">Capataz</option>
-                    <option value="camionero">Camionero</option>
-                    <option value="admin">Administrador</option>
-                  </select>
-                </div>
-              </div>
-              {error && (
-                <div className="text-red-500 text-sm mb-4 bg-red-50 p-2 rounded border border-red-200">
-                  {error}
-                </div>
-              )}
-              {success && (
-                <div className="text-green-500 text-sm mb-4 bg-green-50 p-2 rounded border border-green-200">
-                  {success}
-                </div>
-              )}
-              <div className="pt-4 flex items-center space-x-4">
-                <button
-                  type="button"
-                  onClick={() => navigate('/home')}
-                  className="flex justify-center items-center w-full text-gray-900 px-4 py-3 rounded-md focus:outline-none"
-                >
-                  <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                  </svg> Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="bg-blue-500 flex justify-center items-center w-full text-white px-4 py-3 rounded-md focus:outline-none hover:bg-blue-600 disabled:opacity-50"
-                >
-                  {loading ? 'Creando...' : 'Crear Usuario'}
-                </button>
-              </div>
-            </form>
+    <div
+      className="min-h-screen w-full bg-cover bg-center flex flex-col justify-center items-center"
+      style={{
+        backgroundImage: "url('/agregar.png')",
+        backgroundBlendMode: 'overlay',
+        backgroundColor: 'rgba(255,255,255,0.7)'
+      }}
+    >
+      <div className="w-full max-w-lg mx-auto mt-10 mb-8 p-8 rounded-3xl shadow-2xl bg-white bg-opacity-80 backdrop-blur-md border border-gray-200">
+        <h2 className="text-3xl font-bold text-center text-green-800 mb-6">Crear Nuevo Usuario</h2>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-gray-700 font-semibold mb-1">Nombre Completo</label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-300 focus:outline-none bg-white bg-opacity-90"
+              placeholder="Nombre del usuario"
+            />
           </div>
-        </div>
+          <div>
+            <label className="block text-gray-700 font-semibold mb-1">Correo Electrónico</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-300 focus:outline-none bg-white bg-opacity-90"
+              placeholder="correo@ejemplo.com"
+            />
+          </div>
+          <div className="flex gap-4">
+            <div className="w-1/2">
+              <label className="block text-gray-700 font-semibold mb-1">Contraseña</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-300 focus:outline-none bg-white bg-opacity-90"
+                placeholder="••••••••"
+              />
+            </div>
+            <div className="w-1/2">
+              <label className="block text-gray-700 font-semibold mb-1">Confirmar Contraseña</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-300 focus:outline-none bg-white bg-opacity-90"
+                placeholder="••••••••"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-gray-700 font-semibold mb-1">Rol</label>
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-300 focus:outline-none bg-white bg-opacity-90"
+            >
+              <option value="capataz">Capataz</option>
+              <option value="camionero">Camionero</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+          {error && (
+            <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg p-2 text-center">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="text-green-600 text-sm bg-green-50 border border-green-200 rounded-lg p-2 text-center">
+              {success}
+            </div>
+          )}
+          <div className="flex justify-between gap-4 mt-4">
+            <button
+              type="button"
+              onClick={() => navigate('/home')}
+              className="w-1/2 py-2 rounded-lg border border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold shadow-sm transition"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-1/2 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold shadow-md transition disabled:opacity-50"
+            >
+              {loading ? 'Creando...' : 'Crear Usuario'}
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Lista de Usuarios */}
-      <div className="mt-8 max-w-4xl mx-auto px-4">
-        <h3 className="text-xl font-semibold text-gray-700 mb-4">Usuarios Existentes</h3>
-        <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="w-full max-w-4xl mx-auto mt-8 mb-10 p-6 rounded-2xl bg-white bg-opacity-90 shadow-xl border border-gray-200">
+        <h3 className="text-2xl font-semibold text-green-800 mb-4 text-center">Usuarios Existentes</h3>
+        <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-green-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Nombre</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Rol</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -264,13 +251,13 @@ const CreateUserScreen: React.FC = () => {
                 <tr key={user.uid}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-semibold">
                     {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <button
                       onClick={() => handleDeleteUser(user.uid)}
-                      className="text-red-600 hover:text-red-900"
+                      className="text-red-600 hover:text-red-900 font-bold"
                       disabled={loading}
                     >
                       Eliminar
