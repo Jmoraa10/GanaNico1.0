@@ -22,6 +22,7 @@ import BodegasConsolidadoScreen from '../pages/Consolidado/BodegasConsolidadoScr
 import AgendaScreen from '../pages/AgendaScreen';
 import CamionerosScreen from '../pages/CamionerosScreen';
 import { useAuth } from '../contexts/AuthContext';
+import CreateUserScreen from '../pages/CreateUserScreen';
 
 
 interface PrivateRouteProps {
@@ -230,6 +231,14 @@ const AppRoutes: React.FC = () => {
         element={
           <PrivateRoute allowedRoles={['admin']}>
             <CamionerosScreen />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/create-user"
+        element={
+          <PrivateRoute allowedRoles={['admin']}>
+            <CreateUserScreen />
           </PrivateRoute>
         }
       />

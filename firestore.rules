@@ -1,9 +1,51 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permitir acceso a todos los documentos mientras el usuario esté autenticado
+    // --- Funciones reutilizables ---
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Verificar rol del usuario (evita repetir get() en cada regla)
+    function getUserRole() {
+      return get(/databases/$(database)/documents/Users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (getUserRole() == 'admin' || request.auth.token.email in ['johanmora.jm@gmail.com', 'mora.castro.raul@gmail.com']);
+    }
+
+    function isCapataz() {
+      return isAuthenticated() && getUserRole() == 'capataz';
+    }
+
+    function isCamionero() {
+      return isAuthenticated() && getUserRole() == 'camionero';
+    }
+
+    // --- Reglas por colección ---
+    // Colección Users
+    match /Users/{userId} {
+      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == userId);
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin() || (request.auth.uid == userId && !('role' in request.resource.data)); // Evita que usuarios normales cambien su rol
+    }
+
+    // Colección Fincas
+    match /Fincas/{fincaId} {
+      allow read: if isAuthenticated() && (isAdmin() || isCapataz());
+      allow write: if isAdmin() || (isCapataz() && request.resource.data.keys().hasOnly(['campo1', 'campo2'])); // Solo permite editar campos específicos
+    }
+
+    // Colección Camiones (para camioneros)
+    match /Camiones/{camionId} {
+      allow read: if isAuthenticated() && (isAdmin() || isCamionero());
+      allow write: if isAdmin() || (isCamionero() && request.resource.data.keys().hasOnly(['estado', 'ubicacion', 'carga']));
+    }
+
+    // Otras colecciones (Subastas, Agenda, etc.)
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isAdmin();
     }
   }
-} 
+}

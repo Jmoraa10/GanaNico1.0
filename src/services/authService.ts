@@ -6,7 +6,7 @@ import api from './api';
 // Lista de emails que serán administradores por defecto
 const ADMIN_EMAILS = [
   'johanmora.jm@gmail.com',
-  // Agrega aquí otros emails de administradores
+  'mora.castro.raul@gmail.com'
 ];
 
 interface HealthResponse {
@@ -18,6 +18,7 @@ interface UserData {
   token: string;
   email: string;
   uid: string;
+  role: 'admin' | 'capataz';
 }
 
 // Interceptor para manejar errores de autenticación
@@ -98,27 +99,44 @@ export const login = async (email: string, password: string) => {
       
       // Si la verificación es exitosa, retornamos los datos del usuario
       if (response.data.authenticated) {
-        const userData = {
-          email: userCredential.user.email || '',
-          token: token,
-          uid: userCredential.user.uid
-        };
-
+        const userEmail = userCredential.user.email || '';
+        const isAdmin = ADMIN_EMAILS.includes(userEmail);
+        
         try {
           // Verificar si el usuario existe en Firestore
           const userDocRef = doc(db, 'Users', userCredential.user.uid);
           const userDoc = await getDoc(userDocRef);
-
-          // Si el usuario no existe en Firestore o si es un email de administrador, actualizar/crear con rol admin
-          const userEmail = userCredential.user.email || '';
-          if (!userDoc.exists() || ADMIN_EMAILS.includes(userEmail)) {
+          
+          let role: 'admin' | 'capataz' = 'capataz';
+          
+          if (isAdmin) {
+            role = 'admin';
+            // Si es admin, actualizar el documento
             await setDoc(userDocRef, {
               uid: userCredential.user.uid,
               email: userEmail,
-              role: ADMIN_EMAILS.includes(userEmail) ? 'admin' : 'capataz',
+              role: 'admin',
+              updatedAt: new Date().toISOString()
+            }, { merge: true });
+          } else if (userDoc.exists()) {
+            // Si no es admin pero existe el documento, usar el rol existente
+            role = userDoc.data().role || 'capataz';
+          } else {
+            // Si no existe el documento, crear uno nuevo con rol capataz
+            await setDoc(userDocRef, {
+              uid: userCredential.user.uid,
+              email: userEmail,
+              role: 'capataz',
               createdAt: new Date().toISOString()
             }, { merge: true });
           }
+
+          const userData: UserData = {
+            email: userEmail,
+            token: token,
+            uid: userCredential.user.uid,
+            role: role
+          };
 
           // Guardar en localStorage
           localStorage.setItem('user', JSON.stringify(userData));
@@ -126,7 +144,13 @@ export const login = async (email: string, password: string) => {
           return { user: userData };
         } catch (firestoreError) {
           console.error('Error al manejar el documento de usuario:', firestoreError);
-          // Aún así permitimos el login si falla la creación del documento
+          // Si falla Firestore, aún permitimos el login con rol por defecto
+          const userData: UserData = {
+            email: userEmail,
+            token: token,
+            uid: userCredential.user.uid,
+            role: isAdmin ? 'admin' : 'capataz'
+          };
           localStorage.setItem('user', JSON.stringify(userData));
           return { user: userData };
         }
@@ -134,10 +158,11 @@ export const login = async (email: string, password: string) => {
     } catch (apiError) {
       console.error('Error al verificar con el backend:', apiError);
       // Si falla la verificación con el backend, aún permitimos el login
-      const userData = {
+      const userData: UserData = {
         email: userCredential.user.email || '',
         token: token,
-        uid: userCredential.user.uid
+        uid: userCredential.user.uid,
+        role: ADMIN_EMAILS.includes(userCredential.user.email || '') ? 'admin' : 'capataz'
       };
       localStorage.setItem('user', JSON.stringify(userData));
       return { user: userData };
