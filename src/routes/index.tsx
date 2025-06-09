@@ -47,11 +47,32 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, allowedRoles }) =
   return <>{children}</>;
 };
 
+const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (user) {
+    return <Navigate to="/home" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const AppRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/loading" element={<LoadingScreen />} />
-      <Route path="/login" element={<LoginScreen />} />
+      <Route 
+        path="/login" 
+        element={
+          <PublicRoute>
+            <LoginScreen />
+          </PublicRoute>
+        } 
+      />
       <Route
         path="/home"
         element={
@@ -215,9 +236,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/"
         element={
-          <PrivateRoute>
-            <Navigate to="/home" replace />
-          </PrivateRoute>
+          <Navigate to="/login" replace />
         }
       />
       <Route path="*" element={<div>Página no encontrada</div>} />

@@ -30,6 +30,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initializeAuth = async () => {
       try {
+        // Primero limpiar cualquier estado anterior
+        setUser(null);
+        localStorage.removeItem('user');
+
         unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
           if (firebaseUser) {
             try {
@@ -50,7 +54,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 role: role
               };
 
-              setUser(newUser);
+              // Guardar en localStorage solo si tenemos un token válido
+              const token = await firebaseUser.getIdToken();
+              if (token) {
+                localStorage.setItem('user', JSON.stringify({
+                  uid: firebaseUser.uid,
+                  email: userEmail,
+                  token: token
+                }));
+                setUser(newUser);
+              } else {
+                setUser(null);
+                localStorage.removeItem('user');
+              }
 
               if (ADMIN_EMAILS.includes(userEmail) && userData?.role !== 'admin') {
                 await setDoc(doc(db, 'Users', firebaseUser.uid), {
@@ -62,16 +78,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
             } catch (error) {
               console.error('Error al obtener datos del usuario:', error);
-              const userEmail = firebaseUser.email || '';
-              const ADMIN_EMAILS = [
-                'johanmora.jm@gmail.com',
-                'mora.castro.raul@gmail.com'
-              ];
-              setUser({
-                uid: firebaseUser.uid,
-                email: userEmail,
-                role: ADMIN_EMAILS.includes(userEmail) ? 'admin' : 'capataz'
-              });
+              setUser(null);
+              localStorage.removeItem('user');
             }
           } else {
             setUser(null);

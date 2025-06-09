@@ -32,10 +32,7 @@ const LoginScreen: React.FC = () => {
         throw new Error('Error en la respuesta del servidor');
       }
 
-      // Esperar un momento para asegurar que el estado se actualice
-      setTimeout(() => {
-        navigate('/home', { replace: true });
-      }, 100);
+      // No necesitamos el setTimeout aquí ya que el useEffect se encargará de la redirección
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message || 'Credenciales inválidas o error de red.');
