@@ -33,7 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
           console.log('[AuthContext] onAuthStateChanged:', firebaseUser);
-          if (firebaseUser) {
+          if (firebaseUser && firebaseUser.email) {
             try {
               const userDoc = await getDoc(doc(db, 'Users', firebaseUser.uid));
               const userData = userDoc.data();
@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 'johanmora.jm@gmail.com',
                 'mora.castro.raul@gmail.com'
               ];
-              const userEmail = firebaseUser.email || '';
+              const userEmail = firebaseUser.email;
               let role: 'admin' | 'capataz' | 'camionero';
               if (ADMIN_EMAILS.includes(userEmail)) {
                 role = 'admin';
@@ -90,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             setUser(null);
             localStorage.removeItem('user');
-            console.log('[AuthContext] No hay usuario autenticado');
+            console.log('[AuthContext] No hay usuario autenticado, localStorage limpiado');
           }
           setLoading(false);
           console.log('[AuthContext] Loading:', false);

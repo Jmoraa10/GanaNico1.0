@@ -38,10 +38,12 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, allowedRoles }) =
   }
 
   if (!user) {
+    console.log('[PrivateRoute] Usuario no autenticado, redirigiendo a /login');
     return <Navigate to="/login" replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
+    console.log('[PrivateRoute] Usuario autenticado pero sin rol permitido:', user.role);
     return <Navigate to="/home" replace />;
   }
 
@@ -56,6 +58,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }
 
   if (user) {
+    console.log('[PublicRoute] Usuario autenticado, redirigiendo a /home:', user);
     return <Navigate to="/home" replace />;
   }
 
