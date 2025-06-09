@@ -29,6 +29,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let unsubscribe: () => void;
 
+    // Al iniciar, limpiar cualquier user basura en localStorage
+    localStorage.removeItem('user');
+    setUser(null);
+    setLoading(true);
+    console.log('[AuthContext] Limpieza inicial de localStorage y user');
+
     const initializeAuth = async () => {
       try {
         unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
