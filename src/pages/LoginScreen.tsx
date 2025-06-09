@@ -15,6 +15,7 @@ const LoginScreen: React.FC = () => {
   // Si ya hay un usuario autenticado, redirigir a home
   React.useEffect(() => {
     if (user) {
+      console.log('[LoginScreen] Usuario autenticado, redirigiendo a home:', user);
       navigate('/home', { replace: true });
     }
   }, [user, navigate]);
@@ -26,18 +27,21 @@ const LoginScreen: React.FC = () => {
 
     try {
       const response = await login(email, password);
+      console.log('[LoginScreen] Login exitoso:', response);
       
       // Asegurarnos de que tenemos todos los datos necesarios
       if (!response.user || !response.user.token) {
         throw new Error('Error en la respuesta del servidor');
       }
 
-      // No necesitamos el setTimeout aquí ya que el useEffect se encargará de la redirección
+      // El AuthContext y el useEffect se encargan de la redirección
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message || 'Credenciales inválidas o error de red.');
+        console.error('[LoginScreen] Error de login:', err.message);
       } else {
         setError('Ocurrió un error desconocido.');
+        console.error('[LoginScreen] Error desconocido:', err);
       }
     } finally {
       setLoading(false);

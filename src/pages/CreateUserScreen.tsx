@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface UserFormData {
   email: string;
@@ -22,6 +23,7 @@ interface User {
 
 const CreateUserScreen: React.FC = () => {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -35,8 +37,13 @@ const CreateUserScreen: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (currentUser) {
+      fetchUsers();
+    } else {
+      setUsers([]);
+      setError('Debes iniciar sesión para ver los usuarios.');
+    }
+  }, [currentUser]);
 
   const fetchUsers = async () => {
     try {
@@ -44,8 +51,9 @@ const CreateUserScreen: React.FC = () => {
       const usersSnapshot = await getDocs(usersCollection);
       const usersList = usersSnapshot.docs.map(doc => doc.data() as User);
       setUsers(usersList);
+      console.log('[CreateUserScreen] Usuarios cargados:', usersList);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('[CreateUserScreen] Error fetching users:', error);
       setError('Error al cargar los usuarios');
     }
   };

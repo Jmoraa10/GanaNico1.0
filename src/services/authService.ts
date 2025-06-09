@@ -140,10 +140,11 @@ export const login = async (email: string, password: string) => {
 
           // Guardar en localStorage
           localStorage.setItem('user', JSON.stringify(userData));
+          console.log('[authService] Usuario guardado en localStorage:', userData);
           
           return { user: userData };
         } catch (firestoreError) {
-          console.error('Error al manejar el documento de usuario:', firestoreError);
+          console.error('[authService] Error al manejar el documento de usuario:', firestoreError);
           // Si falla Firestore, aún permitimos el login con rol por defecto
           const userData: UserData = {
             email: userEmail,
@@ -156,7 +157,7 @@ export const login = async (email: string, password: string) => {
         }
       }
     } catch (apiError) {
-      console.error('Error al verificar con el backend:', apiError);
+      console.error('[authService] Error al verificar con el backend:', apiError);
       // Si falla la verificación con el backend, aún permitimos el login
       const userData: UserData = {
         email: userCredential.user.email || '',
@@ -183,7 +184,7 @@ export const login = async (email: string, password: string) => {
       case 'auth/too-many-requests':
         throw new Error('Demasiados intentos fallidos. Por favor, intente más tarde.');
       default:
-        console.error('Error de autenticación:', error);
+        console.error('[authService] Error de autenticación:', error);
         throw new Error('Error al iniciar sesión. Por favor, intente nuevamente.');
     }
   }
