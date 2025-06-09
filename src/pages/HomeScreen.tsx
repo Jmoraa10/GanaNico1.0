@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Tractor, Hammer, BarChart, LogOut, Calendar } from "lucide-react";
+import { Tractor, Hammer, BarChart, LogOut, Calendar, Truck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -36,6 +36,13 @@ export default function HomeScreen() {
       icon: <Calendar size={40} className="text-white" />,
       path: "/agenda",
       description: "Gestión de eventos y actividades",
+      allowedRoles: ['admin']
+    },
+    {
+      title: "CAMIONEROS",
+      icon: <Truck size={40} className="text-white" />,
+      path: "/camioneros",
+      description: "Gestión de transportistas",
       allowedRoles: ['admin']
     },
   ];

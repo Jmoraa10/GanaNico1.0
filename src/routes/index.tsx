@@ -20,6 +20,7 @@ import AnimalesConsolidadoScreen from '../pages/Consolidado/AnimalesConsolidadoS
 import SubastasConsolidadoScreen from '../pages/Consolidado/SubastasConsolidadoScreen';
 import BodegasConsolidadoScreen from '../pages/Consolidado/BodegasConsolidadoScreen';
 import AgendaScreen from '../pages/AgendaScreen';
+import CamionerosScreen from '../pages/CamionerosScreen';
 import { useAuth } from '../contexts/AuthContext';
 
 
@@ -200,6 +201,14 @@ const AppRoutes: React.FC = () => {
         element={
           <PrivateRoute allowedRoles={['admin']}>
             <AgendaScreen />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/camioneros"
+        element={
+          <PrivateRoute allowedRoles={['admin']}>
+            <CamionerosScreen />
           </PrivateRoute>
         }
       />

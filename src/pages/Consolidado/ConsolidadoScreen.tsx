@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { LogOut, Home } from "lucide-react";
+import { LogOut, Home, Truck } from "lucide-react";
 import { Hammer, Warehouse } from "lucide-react";
 
 const cardData = [
@@ -20,6 +20,12 @@ const cardData = [
     description: "INVENTARIO GENERAL",
     action: true,
     icon: <Warehouse size={80} className="text-yellow-700 mb-4" />,
+  },
+  {
+    title: "CAMIONEROS",
+    description: "REGISTRO DE TRANSPORTES",
+    action: true,
+    icon: <Truck size={80} className="text-green-700 mb-4" />,
   },
 ];
 
@@ -57,7 +63,7 @@ export default function ConsolidadoScreen() {
             className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white px-3 py-2 rounded-xl transition-colors duration-300 shadow-md"
           >
             <Home size={20} />
-            Volver a Home
+            Regresar a Home
           </button>
           <button
             onClick={() => {
@@ -76,16 +82,19 @@ export default function ConsolidadoScreen() {
             Consolidado de Datos
           </h2>
           <p className="text-green-800 text-lg text-center max-w-2xl mb-6">
-            Accede a los reportes y análisis consolidados de animales, subastas y bodegas de la empresa.
+            Accede a los reportes y análisis consolidados de animales, subastas, bodegas y transportes de la empresa.
           </p>
         </div>
         {/* Cards */}
-        <div className="flex-1 flex flex-col md:flex-row gap-6 justify-center items-center px-4 pb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl mx-auto px-6 py-8">
           {cardData.map((card) => (
             <div
               key={card.title}
-              className={`bg-white bg-opacity-90 border-2 border-green-700 rounded-2xl p-8 shadow-lg flex flex-col items-center w-full max-w-xs min-h-[260px] mb-4 md:mb-0 hover:scale-105 transition-transform duration-200 ${card.action ? 'cursor-pointer' : ''}`}
-              onClick={card.title === 'ANIMALES' ? () => navigate('/consolidado/animales') : card.title === 'SUBSTAS' ? () => navigate('/consolidado/subastas') : card.title === 'BODEGAS' ? () => navigate('/consolidado/bodegas') : undefined}
+              className={`bg-white bg-opacity-90 border-2 border-green-700 rounded-2xl p-8 shadow-lg flex flex-col items-center w-full min-h-[260px] mb-4 md:mb-0 hover:scale-105 transition-transform duration-200 ${card.action ? 'cursor-pointer' : ''}`}
+              onClick={card.title === 'ANIMALES' ? () => navigate('/consolidado/animales') : 
+                      card.title === 'SUBSTAS' ? () => navigate('/consolidado/subastas') : 
+                      card.title === 'BODEGAS' ? () => navigate('/consolidado/bodegas') :
+                      card.title === 'CAMIONEROS' ? () => navigate('/consolidado/camioneros') : undefined}
             >
               {card.icon}
               <h3 className="text-2xl font-bold text-green-800 mb-2 text-center font-rio">
