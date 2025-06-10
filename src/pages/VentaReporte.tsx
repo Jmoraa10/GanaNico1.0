@@ -27,7 +27,7 @@ const VentaReporte: React.FC = () => {
         const ventasData = await getVentasByFinca(id);
         setVentas(ventasData);
       } catch (error) {
-        console.error('Error al cargar datos:', error);
+        // console.error('Error al cargar datos:', error);
         setVentas([]);
       } finally {
         setLoading(false);

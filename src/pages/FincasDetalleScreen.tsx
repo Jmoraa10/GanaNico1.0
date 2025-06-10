@@ -40,10 +40,10 @@ const FincasDetalleScreen: React.FC = () => {
       }
     } catch (err) {
       if (err instanceof Error) {
-        console.error("Error al cargar la finca:", err.message);
+        // console.error("Error al cargar la finca:", err.message);
         setError(`Error al cargar los datos de la finca: ${err.message}`);
       } else {
-        console.error("Error al cargar la finca:", err);
+        // console.error("Error al cargar la finca:", err);
         setError("Ocurrió un error desconocido al cargar los datos de la finca.");
       }
     } finally {
@@ -83,10 +83,10 @@ const FincasDetalleScreen: React.FC = () => {
       }
     } catch (err) {
       if (err instanceof Error) {
-        console.error("Error al actualizar la finca:", err.message);
+        // console.error("Error al actualizar la finca:", err.message);
         setError(`Error al guardar los cambios: ${err.message}`);
       } else {
-        console.error("Error al actualizar la finca:", err);
+        // console.error("Error al actualizar la finca:", err);
         setError("Ocurrió un error desconocido al guardar los cambios.");
       }
     } finally {
@@ -112,7 +112,7 @@ const FincasDetalleScreen: React.FC = () => {
       await handleUpdate(updatedFinca);
       setIsMovimientoDialogOpen(false); // Cerramos el diálogo después de guardar
     } catch (error) {
-      console.error('Error al guardar el movimiento:', error);
+      // console.error('Error al guardar el movimiento:', error);
       setError('Error al guardar el movimiento. Por favor, intente nuevamente.');
     }
   };

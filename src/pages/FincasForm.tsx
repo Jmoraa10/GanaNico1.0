@@ -141,7 +141,6 @@ const FincasForm: React.FC = () => {
             if (currentLevel && typeof currentLevel === 'object' && key in currentLevel) {
                 currentLevel = currentLevel[key];
             } else {
-                console.error(`Error updating animal path: Invalid segment ${key} in path ${path}`);
                 return; // Salir si la ruta no es válida
             }
         }
@@ -152,10 +151,8 @@ const FincasForm: React.FC = () => {
              if (typeof currentLevel[finalKey] === 'number') {
                 currentLevel[finalKey] = valueToSet;
              } else {
-                 console.warn(`Attempted to set numeric value on non-numeric property at ${path}`);
+                 return;
              }
-        } else {
-             console.error(`Error updating animal path: Invalid final key ${finalKey} in path ${path}`);
         }
     }));
  };

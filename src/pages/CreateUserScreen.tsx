@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,14 +12,18 @@ interface UserFormData {
   confirmPassword: string;
   role: 'admin' | 'capataz' | 'camionero';
   name: string;
+  phone: string;
 }
 
-interface User {
+interface UserRow {
   uid: string;
   email: string;
-  name: string;
+  name?: string;
   role: string;
-  createdAt: string;
+  phone?: string;
+  lastSignInTime?: string;
+  creationTime?: string;
+  disabled?: boolean;
 }
 
 const CreateUserScreen: React.FC = () => {
@@ -28,15 +32,22 @@ const CreateUserScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserRow[]>([]);
   const [formData, setFormData] = useState<UserFormData>({
     email: '',
     password: '',
     confirmPassword: '',
     role: 'capataz',
-    name: ''
+    name: '',
+    phone: ''
   });
   const logout = useLogout();
+
+  useEffect(() => {
+    if (currentUser?.role !== 'admin') {
+      navigate('/home');
+    }
+  }, [currentUser, navigate]);
 
   useEffect(() => {
     if (currentUser) {
@@ -45,18 +56,58 @@ const CreateUserScreen: React.FC = () => {
       setUsers([]);
       setError('Debes iniciar sesión para ver los usuarios.');
     }
+    // eslint-disable-next-line
   }, [currentUser]);
 
   const fetchUsers = async () => {
+    setLoading(true);
+    setError('');
     try {
+      // Obtener token del usuario admin
+      const userData = localStorage.getItem('user');
+      const token = userData ? JSON.parse(userData).token : null;
+      if (!token) throw new Error('No hay token de autenticación');
+      // Llamar al endpoint del backend
+      const res = await fetch(`${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/auth/users`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!res.ok) {
+        throw new Error('No se pudo obtener la lista de usuarios');
+      }
+      const data = await res.json();
+      // Mapear los datos para la tabla
+      const usersList: UserRow[] = data.users.map((u: any) => ({
+        uid: u.uid,
+        email: u.email,
+        name: u.displayName || '',
+        phone: u.phoneNumber || '',
+        lastSignInTime: u.metadata?.lastSignInTime,
+        creationTime: u.metadata?.creationTime,
+        disabled: u.disabled,
+        role: '' // Se completará con Firestore abajo
+      }));
+      // Obtener roles y nombres desde Firestore
       const usersCollection = collection(db, 'Users');
       const usersSnapshot = await getDocs(usersCollection);
-      const usersList = usersSnapshot.docs.map(doc => doc.data() as User);
-      setUsers(usersList);
-      console.log('[CreateUserScreen] Usuarios cargados:', usersList);
-    } catch (error) {
-      console.error('[CreateUserScreen] Error fetching users:', error);
-      setError('Error al cargar los usuarios');
+      const firestoreMap: Record<string, any> = {};
+      usersSnapshot.docs.forEach(docu => {
+        firestoreMap[docu.id] = docu.data();
+      });
+      // Mezclar datos de Auth y Firestore
+      const mergedUsers = usersList.map(u => ({
+        ...u,
+        role: firestoreMap[u.uid]?.role || '',
+        name: firestoreMap[u.uid]?.name || u.name,
+        phone: firestoreMap[u.uid]?.phone || u.phone
+      }));
+      setUsers(mergedUsers);
+    } catch (error: any) {
+      setError(error.message || 'Error al cargar los usuarios');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,7 +121,6 @@ const CreateUserScreen: React.FC = () => {
       setUsers(users.filter(user => user.uid !== uid));
       setSuccess('Usuario eliminado exitosamente');
     } catch (error) {
-      console.error('Error al eliminar usuario:', error);
       setError('Error al eliminar el usuario');
     } finally {
       setLoading(false);
@@ -85,12 +135,25 @@ const CreateUserScreen: React.FC = () => {
     }));
   };
 
+  const handlePasswordReset = async (email: string) => {
+    setError('');
+    setSuccess('');
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setSuccess('Correo de cambio de contraseña enviado');
+    } catch (error: any) {
+      setError('No se pudo enviar el correo de cambio de contraseña');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     setLoading(true);
     try {
+      if (!formData.name.trim()) throw new Error('El nombre es obligatorio');
+      if (!formData.phone.trim()) throw new Error('El teléfono es obligatorio');
       if (formData.password !== formData.confirmPassword) {
         throw new Error('Las contraseñas no coinciden');
       }
@@ -107,6 +170,7 @@ const CreateUserScreen: React.FC = () => {
         email: formData.email,
         name: formData.name,
         role: formData.role,
+        phone: formData.phone,
         createdAt: new Date().toISOString()
       });
       setSuccess('Usuario creado exitosamente');
@@ -115,11 +179,11 @@ const CreateUserScreen: React.FC = () => {
         password: '',
         confirmPassword: '',
         role: 'capataz',
-        name: ''
+        name: '',
+        phone: ''
       });
       fetchUsers();
     } catch (error: any) {
-      console.error('Error al crear usuario:', error);
       switch (error.code) {
         case 'auth/email-already-in-use':
           setError('Este correo electrónico ya está en uso');
@@ -172,6 +236,18 @@ const CreateUserScreen: React.FC = () => {
               required
               className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-300 focus:outline-none bg-white bg-opacity-90"
               placeholder="correo@ejemplo.com"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 font-semibold mb-1">Teléfono</label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-300 focus:outline-none bg-white bg-opacity-90"
+              placeholder="Número de teléfono"
             />
           </div>
           <div className="flex gap-4">
@@ -244,7 +320,7 @@ const CreateUserScreen: React.FC = () => {
       </div>
 
       {/* Lista de Usuarios */}
-      <div className="w-full max-w-4xl mx-auto mt-8 mb-10 p-6 rounded-2xl bg-white bg-opacity-90 shadow-xl border border-gray-200">
+      <div className="w-full max-w-4xl mx-auto mb-10 p-6 rounded-3xl shadow-xl bg-white bg-opacity-90 backdrop-blur-md border border-gray-200">
         <h3 className="text-2xl font-semibold text-green-800 mb-4 text-center">Usuarios Existentes</h3>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -252,7 +328,9 @@ const CreateUserScreen: React.FC = () => {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Nombre</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Teléfono</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Rol</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Último Ingreso</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
@@ -261,10 +339,19 @@ const CreateUserScreen: React.FC = () => {
                 <tr key={user.uid}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.phone}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-semibold">
                     {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.lastSignInTime ? new Date(user.lastSignInTime).toLocaleString() : '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex gap-2">
+                    <button
+                      onClick={() => handlePasswordReset(user.email)}
+                      className="text-blue-600 hover:text-blue-900 font-bold"
+                      disabled={loading}
+                    >
+                      Cambiar Contraseña
+                    </button>
                     <button
                       onClick={() => handleDeleteUser(user.uid)}
                       className="text-red-600 hover:text-red-900 font-bold"

@@ -121,7 +121,7 @@ const VentaGanado: React.FC = () => {
         const finca = await getFincaById(id);
         setFincaNombre(finca.nombre || 'Nombre de Finca no encontrado');
       } catch (error) {
-        console.error("Error fetching finca:", error);
+        // console.error("Error fetching finca:", error);
         setFincaNombre('Error al cargar nombre de finca');
       }
     };
@@ -220,7 +220,7 @@ const VentaGanado: React.FC = () => {
       alert('Venta registrada exitosamente!');
       navigate(`/fincas/${id}`);
     } catch (error) {
-      console.error('Error al registrar la venta:', error);
+      // console.error('Error al registrar la venta:', error);
       alert('Error al registrar la venta. Por favor, intente nuevamente.');
     }
   };

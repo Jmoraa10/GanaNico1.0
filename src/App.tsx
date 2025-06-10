@@ -14,7 +14,7 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppWithLoader />
+      <AppWithLoader />
       </AuthProvider>
     </BrowserRouter>
   );
