@@ -4,12 +4,17 @@ import { calcularTotalAnimales } from "../services/fincaService";
 // @ts-ignore
 import { Tractor, LogOut, Plus, Home, X } from "lucide-react";
 import { motion } from "framer-motion";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../contexts/AuthContext";
 
 const FincasScreen: React.FC = () => {
   const navigate = useNavigate();
   const { fincas, loading, error, deleteFinca } = useFincas();
-  const { logout } = useAuth();
+  useAuth();
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
 
   // @ts-ignore
   const handleDeleteFinca = async (id: string, e: React.MouseEvent) => {
@@ -69,7 +74,7 @@ const FincasScreen: React.FC = () => {
             </button>
             
             <button
-              onClick={() => logout()}
+              onClick={() => handleLogout()}
               className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-xl shadow transition"
             >
               <LogOut size={18} />
