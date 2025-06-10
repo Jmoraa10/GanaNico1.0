@@ -4,6 +4,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { useLogout } from '../hooks/useLogout';
 
 interface UserFormData {
   email: string;
@@ -35,6 +36,7 @@ const CreateUserScreen: React.FC = () => {
     role: 'capataz',
     name: ''
   });
+  const logout = useLogout();
 
   useEffect(() => {
     if (currentUser) {
@@ -277,6 +279,13 @@ const CreateUserScreen: React.FC = () => {
           </table>
         </div>
       </div>
+
+      <button
+        onClick={logout}
+        className="fixed top-4 right-4 z-50 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl shadow-md"
+      >
+        Cerrar sesión
+      </button>
     </div>
   );
 };

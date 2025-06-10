@@ -5,6 +5,7 @@ import { MovimientoGanado } from '../types/FincaTypes';
 import { FileText, ArrowLeft, Home, LogOut } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
+import { useLogout } from '../hooks/useLogout';
 
 const MovimientosAnimales: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +13,7 @@ const MovimientosAnimales: React.FC = () => {
   const [selectedMovimiento, setSelectedMovimiento] = useState<MovimientoGanado | null>(null);
   const [isDetallesOpen, setIsDetallesOpen] = useState(false);
   const navigate = useNavigate();
+  const logout = useLogout();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-ES', {
@@ -49,10 +51,7 @@ const MovimientosAnimales: React.FC = () => {
               <Home size={18} /> Ir a Home
             </button>
             <button
-              onClick={() => {
-                localStorage.removeItem('user');
-                navigate('/login');
-              }}
+              onClick={logout}
               className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
             >
               <LogOut size={18} /> Cerrar Sesión

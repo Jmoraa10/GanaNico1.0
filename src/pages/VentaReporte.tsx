@@ -4,6 +4,7 @@ import { getFincaById } from '../services/fincaService';
 import { getVentasByFinca } from '../services/ventaService';
 import { Venta } from '../types/FincaTypes';
 import { ArrowLeft, Home, DollarSign } from 'lucide-react';
+import { useLogout } from '../hooks/useLogout';
 
 const VentaReporte: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -11,6 +12,7 @@ const VentaReporte: React.FC = () => {
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [fincaNombre, setFincaNombre] = useState('');
   const [loading, setLoading] = useState(true);
+  const logout = useLogout();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -103,6 +105,12 @@ const VentaReporte: React.FC = () => {
           </div>
         )}
       </div>
+      <button
+        onClick={logout}
+        className="fixed top-4 right-4 z-50 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl shadow-md"
+      >
+        Cerrar sesión
+      </button>
     </div>
   );
 };

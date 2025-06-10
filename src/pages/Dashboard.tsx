@@ -3,6 +3,7 @@ import { checkHealth } from '../services/api';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import LoadingScreen from './LoadingScreen';
+import { useLogout } from '../hooks/useLogout';
 
 interface HealthStatus {
   status: string;
@@ -18,6 +19,7 @@ interface HealthStatus {
 const Dashboard: React.FC = () => {
   const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true); // Estado para la pantalla de carga
+  const logout = useLogout();
 
   useEffect(() => {
     const fetchHealthStatus = async () => {
@@ -59,6 +61,12 @@ const Dashboard: React.FC = () => {
         <p>Cargando...</p>
       )}
       <button onClick={handleLogin}>Iniciar sesión con Google</button>
+      <button
+        onClick={logout}
+        className="fixed top-4 right-4 z-50 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl shadow-md"
+      >
+        Cerrar sesión
+      </button>
     </div>
   );
 };

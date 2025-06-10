@@ -7,6 +7,7 @@ import { useFincas, useFinca } from '../hooks/useFincas'; // Hooks combinados si
 import { produce } from 'immer'; // Usar Immer para actualizaciones anidadas más sencillas
 import MovimientoGanadoDialog from '../components/MovimientoGanadoDialog';
 import { getFincaById } from '../services/fincaService';
+import { useLogout } from '../hooks/useLogout';
 
 // Helper para formatear etiquetas (opcional, si no lo tienes globalmente)
 const formatLabel = (str: string): string => {
@@ -62,6 +63,7 @@ const FincasForm: React.FC = () => {
   const { addFinca, updateFinca, loading: saving } = useFincas(); // Asume que useFincas retorna 'loading'
   // Cargar datos solo si estamos editando
   const { finca: existingFinca, loading: loadingFinca } = useFinca(id || ''); // Removed second argument
+  const logout = useLogout();
 
   // Estado inicial con la estructura completa, incluyendo bodega
   const [formData, setFormData] = React.useState<FincaFormData>(getInitialFincaFormData());
@@ -585,6 +587,12 @@ const FincasForm: React.FC = () => {
         )}
         </div>
       </div>
+      <button
+        onClick={logout}
+        className="fixed top-4 right-4 z-50 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl shadow-md"
+      >
+        Cerrar sesión
+      </button>
     </div>
   );
 };

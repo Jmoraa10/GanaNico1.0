@@ -2,10 +2,12 @@ import { motion } from "framer-motion";
 import { Tractor, Hammer, BarChart, LogOut, Calendar, Truck, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useLogout } from '../hooks/useLogout';
 
 export default function HomeScreen() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const logout = useLogout();
 
   console.log('Usuario actual en HomeScreen:', user);
 
@@ -82,10 +84,7 @@ export default function HomeScreen() {
           EMPRESA GANADERA FAMILIAR
         </h1>
         <motion.button
-          onClick={() => {
-            localStorage.removeItem("idToken");
-            navigate("/login");
-          }}
+          onClick={logout}
           className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-xl transition-colors duration-300 shadow-md"
           whileHover={{ scale: 1.05 }}
         >

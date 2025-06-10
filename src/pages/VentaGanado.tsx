@@ -4,6 +4,7 @@ import { useSessionExpire } from '../hooks/useSessionExpire';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getFincaById } from '../services/fincaService'; // Asegúrate que estas rutas sean correctas
 import { crearVenta } from '../services/ventaService';   // Asegúrate que estas rutas sean correctas
+import { useLogout } from '../hooks/useLogout';
 
 const COLUMN_SIZE = 10;
 const COLUMNS_PER_ROW = 5; // 5 columnas por fila
@@ -17,6 +18,7 @@ const LOCAL_STORAGE_KEY = 'ventaGanadoDraft';
 
 const VentaGanado: React.FC = () => {
   const { expireDialogOpen, setExpireDialogOpen } = useSessionExpire('user', 55); // 55 minutos antes de expirar
+  const logout = useLogout();
 
   // Handler para reiniciar página (logout forzado o por expiración)
   // Ya NO borra el draft de venta, solo elimina el usuario
@@ -415,6 +417,12 @@ const VentaGanado: React.FC = () => {
           </button>
         </div>
       </div>
+      <button
+        onClick={logout}
+        className="fixed top-4 right-4 z-50 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl shadow-md"
+      >
+        Cerrar sesión
+      </button>
     </div>
     </>
   );
