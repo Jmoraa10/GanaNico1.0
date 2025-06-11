@@ -12,6 +12,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const ventaRoutes = require('./routes/ventaRoutes');
 const subastaRoutes = require('./routes/subastas');
 const agendaRoutes = require('./routes/agenda');
+const transporteRoutes = require('./routes/transporteRoutes');
 const { authenticate } = require('./middleware/auth');
 
 // Verificación crítica de variables
@@ -158,6 +159,7 @@ app.use('/api/dashboard', authenticate, dashboardRoutes);
 app.use('/api/ventas', authenticate, ventaRoutes);
 app.use('/api/subastas', subastaRoutes);
 app.use('/api/agenda', agendaRoutes);
+app.use('/api/transportes', authenticate, transporteRoutes);
 
 // Manejo de errores
 app.use((err, req, res, next) => {

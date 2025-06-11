@@ -12,9 +12,16 @@ export const api = axios.create({
 
 // Interceptor para agregar el token de autenticación
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const userData = localStorage.getItem('user');
+  if (userData) {
+    try {
+      const { token } = JSON.parse(userData);
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error('Error al parsear datos del usuario:', error);
+    }
   }
   return config;
 }); 
