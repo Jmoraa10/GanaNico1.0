@@ -1,6 +1,6 @@
 const admin = require('firebase-admin');
 
-const authenticate = async (req, res, next) => {
+const verificarToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -27,6 +27,28 @@ const authenticate = async (req, res, next) => {
   }
 };
 
+const esAdmin = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    // Verificar si el usuario tiene el rol de admin
+    const userRecord = await admin.auth().getUser(req.user.uid);
+    const customClaims = userRecord.customClaims || {};
+    
+    if (!customClaims.admin) {
+      return res.status(403).json({ error: 'Acceso denegado. Se requiere rol de administrador' });
+    }
+
+    next();
+  } catch (error) {
+    console.error('❌ Error al verificar rol de admin:', error);
+    res.status(500).json({ error: 'Error al verificar permisos' });
+  }
+};
+
 module.exports = {
-  authenticate
+  verificarToken,
+  esAdmin
 }; 

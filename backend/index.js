@@ -12,7 +12,8 @@ const dashboardRoutes = require('./routes/dashboard');
 const ventaRoutes = require('./routes/ventaRoutes');
 const subastaRoutes = require('./routes/subastas');
 const agendaRoutes = require('./routes/agenda');
-const { authenticate } = require('./middleware/auth');
+const transporteRoutes = require('./routes/transporteRoutes');
+const { verificarToken } = require('./middleware/auth');
 
 // Verificación crítica de variables
 if (!process.env.FIREBASE_PRIVATE_KEY || !process.env.MONGODB_URI) {
@@ -152,12 +153,13 @@ app.get('/api/health', (req, res) => {
 
 // Rutas de la API
 app.use('/api/auth', authRoutes);
-app.use('/api/fincas', authenticate, fincaRoutes);
-app.use('/api/movimientos', authenticate, movimientoRoutes);
-app.use('/api/dashboard', authenticate, dashboardRoutes);
-app.use('/api/ventas', authenticate, ventaRoutes);
-app.use('/api/subastas', subastaRoutes);
-app.use('/api/agenda', agendaRoutes);
+app.use('/api/fincas', verificarToken, fincaRoutes);
+app.use('/api/movimientos', verificarToken, movimientoRoutes);
+app.use('/api/dashboard', verificarToken, dashboardRoutes);
+app.use('/api/ventas', verificarToken, ventaRoutes);
+app.use('/api/subastas', verificarToken, subastaRoutes);
+app.use('/api/agenda', verificarToken, agendaRoutes);
+app.use('/api/transportes', verificarToken, transporteRoutes);
 
 // Manejo de errores
 app.use((err, req, res, next) => {
