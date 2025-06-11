@@ -81,10 +81,14 @@ exports.obtenerViaje = async (req, res) => {
 // Actualizar un viaje
 exports.actualizarViaje = async (req, res) => {
   try {
+    console.log('ID del viaje a actualizar:', req.params.id);
+    console.log('Datos recibidos:', req.body);
+
     const { detallesFinalizacion } = req.body;
     const viaje = await Transporte.findById(req.params.id);
     
     if (!viaje) {
+      console.log('Viaje no encontrado con ID:', req.params.id);
       return res.status(404).json({ mensaje: 'Viaje no encontrado' });
     }
 
@@ -104,6 +108,7 @@ exports.actualizarViaje = async (req, res) => {
     };
     res.json(viajeConResumen);
   } catch (error) {
+    console.error('Error al actualizar viaje:', error);
     res.status(400).json({ mensaje: error.message });
   }
 };

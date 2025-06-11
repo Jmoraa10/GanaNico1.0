@@ -101,10 +101,13 @@ export const CamionerosScreen = () => {
   };
 
   const confirmarFinalizacion = async () => {
-    if (!viajeSeleccionado) return;
+    if (!viajeSeleccionado || !viajeSeleccionado.id) {
+      console.error('No se ha seleccionado un viaje o el ID es inválido');
+      return;
+    }
 
     try {
-      await transporteService.actualizarViaje(viajeSeleccionado.id!, {
+      await transporteService.actualizarViaje(viajeSeleccionado.id, {
         estado: 'CULMINADO',
         detallesFinalizacion
       });
@@ -113,12 +116,10 @@ export const CamionerosScreen = () => {
       setDetallesFinalizacion('');
       setViajeSeleccionado(null);
     } catch (err) {
+      console.error('Error al finalizar el viaje:', err);
       setError('Error al finalizar el viaje');
-      console.error(err);
     }
   };
-
-
 
   const agregarAnimal = () => {
     setFormData(prev => ({
