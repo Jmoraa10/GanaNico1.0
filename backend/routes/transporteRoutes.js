@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const transporteController = require('../controllers/transporteController');
-const { verificarToken, esAdmin } = require('../middleware/auth');
+const { authenticate, esAdmin } = require('../middleware/auth');
 
 // Todas las rutas requieren autenticación
-router.use(verificarToken);
+router.use(authenticate);
 
 // Rutas para administradores
 router.post('/', esAdmin, transporteController.crearViaje);
