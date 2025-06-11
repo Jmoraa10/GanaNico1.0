@@ -1,6 +1,6 @@
 const express = require('express');
 const Finca = require('../models/Finca'); // Importa el modelo de Finca
-const admin = require('firebase-admin');
+const { auth } = require('../config/firebase');
 const router = express.Router();
 
 // Middleware para verificar el token de Firebase
@@ -11,7 +11,7 @@ const verifyToken = async (req, res, next) => {
       return res.status(401).json({ message: 'Token no proporcionado' });
     }
 
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    const decodedToken = await auth.verifyIdToken(token);
     req.user = decodedToken;
     next();
   } catch (error) {

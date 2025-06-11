@@ -5,13 +5,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const admin = require('firebase-admin');
 const { initializeApp } = require('firebase/app');
-const authRoutes = require('./routes/auth');
-const fincaRoutes = require('./routes/finca');
-const movimientoRoutes = require('./routes/movimientos');
-const dashboardRoutes = require('./routes/dashboard');
-const ventaRoutes = require('./routes/ventaRoutes');
-const subastaRoutes = require('./routes/subastas');
-const agendaRoutes = require('./routes/agenda');
+const routes = require('./routes');
 const { authenticate } = require('./middleware/auth');
 
 // Verificación crítica de variables
@@ -161,13 +155,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Rutas de la API
-app.use('/api/auth', authRoutes);
-app.use('/api/fincas', authenticate, fincaRoutes);
-app.use('/api/movimientos', authenticate, movimientoRoutes);
-app.use('/api/dashboard', authenticate, dashboardRoutes);
-app.use('/api/ventas', authenticate, ventaRoutes);
-app.use('/api/subastas', subastaRoutes);
-app.use('/api/agenda', agendaRoutes);
+app.use('/api', routes);
 
 // Manejo de errores
 app.use((err, req, res, next) => {

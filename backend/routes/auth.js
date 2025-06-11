@@ -1,5 +1,5 @@
 const express = require('express');
-const admin = require('firebase-admin');
+const { auth } = require('../config/firebase');
 const router = express.Router();
 
 // Middleware para verificar el token de Firebase
@@ -11,7 +11,7 @@ const verifyToken = async (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
   try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    const decodedToken = await auth.verifyIdToken(token);
     req.user = decodedToken;
     next();
   } catch (error) {
@@ -34,7 +34,7 @@ router.get('/verify', verifyToken, (req, res) => {
 // Ruta para obtener información del usuario
 router.get('/user', verifyToken, async (req, res) => {
   try {
-    const user = await admin.auth().getUser(req.user.uid);
+    const user = await auth.getUser(req.user.uid);
     res.json({
       uid: user.uid,
       email: user.email,
@@ -63,9 +63,9 @@ router.get('/users', verifyToken, async (req, res) => {
       return res.status(403).json({ error: 'Solo los administradores pueden ver la lista de usuarios.' });
     }
 
-    // Verificar que admin.auth esté inicializado
-    if (!admin || !admin.auth) {
-      return res.status(500).json({ error: 'Firebase Admin no está inicializado correctamente. Verifica las credenciales.' });
+    // Verificar que auth esté inicializado
+    if (!auth) {
+      return res.status(500).json({ error: 'Firebase Auth no está inicializado correctamente. Verifica las credenciales.' });
     }
 
     console.log('✅ Usuario autorizado como admin');
@@ -74,7 +74,7 @@ router.get('/users', verifyToken, async (req, res) => {
     const listAllUsers = async (nextPageToken, accum = []) => {
       try {
         console.log('📋 Listando usuarios con token:', nextPageToken || 'inicial');
-        const result = await admin.auth().listUsers(1000, nextPageToken);
+        const result = await auth.listUsers(1000, nextPageToken);
         console.log(`✅ Usuarios obtenidos: ${result.users.length}`);
         
         const users = result.users.map(userRecord => ({
