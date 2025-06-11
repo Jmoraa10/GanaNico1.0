@@ -1,4 +1,4 @@
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '../config/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import api from './api';
@@ -234,6 +234,24 @@ export const updateUserRole = async (userId: string, newRole: 'admin' | 'capataz
     console.error('Error al actualizar el rol del usuario:', error);
     throw new Error('No se pudo actualizar el rol del usuario');
   }
+};
+
+export const createUserInFirestore = async (uid: string, data: { email: string; name: string; phone: string; role: string; }) => {
+  await setDoc(doc(db, 'Users', uid), {
+    uid,
+    ...data,
+    createdAt: new Date().toISOString(),
+  }, { merge: true });
+};
+
+export const sendPasswordReset = async (email: string) => {
+  await sendPasswordResetEmail(auth, email);
+};
+
+export const getLastSignIn = async (uid: string) => {
+  // Se debe obtener desde Firebase Auth, no Firestore
+  // Esto requiere privilegios de admin en backend, pero aquí solo retornamos null
+  return null;
 };
 
 export default api;

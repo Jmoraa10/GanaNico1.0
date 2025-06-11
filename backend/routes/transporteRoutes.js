@@ -1,21 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const transporteController = require('../controllers/transporteController');
-const { authenticate } = require('../middleware/auth');
+const { verificarToken, esAdmin } = require('../middleware/auth');
 
 // Todas las rutas requieren autenticación
-router.use(authenticate);
+router.use(verificarToken);
 
-// Rutas para administradores (usando authenticate en lugar de esAdmin)
-router.post('/', authenticate, transporteController.crearViaje);
-router.put('/:id', authenticate, transporteController.actualizarViaje);
-router.delete('/:id', authenticate, transporteController.eliminarViaje);
+// Rutas para administradores
+router.post('/', esAdmin, transporteController.crearViaje);
+router.put('/:id', esAdmin, transporteController.actualizarViaje);
+router.delete('/:id', esAdmin, transporteController.eliminarViaje);
 
 // Rutas para todos los usuarios autenticados
 router.get('/', transporteController.obtenerViajes);
 router.get('/en-curso', transporteController.obtenerViajesEnCurso);
 router.get('/culminados', transporteController.obtenerViajesCulminados);
 router.get('/:id', transporteController.obtenerViaje);
-router.get('/resumen/total', authenticate, transporteController.obtenerResumen);
+router.get('/resumen/total', esAdmin, transporteController.obtenerResumen);
 
 module.exports = router; 

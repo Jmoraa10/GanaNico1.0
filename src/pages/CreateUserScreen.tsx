@@ -1,30 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useLogout } from '../hooks/useLogout';
+import { sendPasswordReset } from '../services/authService';
 
 interface UserFormData {
   email: string;
   password: string;
   confirmPassword: string;
-  role: 'admin' | 'capataz' | 'camionero';
   name: string;
   phone: string;
+  role: 'admin' | 'capataz' | 'camionero';
 }
 
-interface UserRow {
+interface User {
   uid: string;
   email: string;
-  name?: string;
-  role: string;
-  phone?: string;
-  lastSignInTime?: string;
-  creationTime?: string;
-  disabled?: boolean;
+  name: string;
+  phone: string;
+  role: 'admin' | 'capataz' | 'camionero';
+  lastSignIn?: string;
 }
+
+const initialFormData: UserFormData = {
+  email: '',
+  password: '',
+  confirmPassword: '',
+  name: '',
+  phone: '',
+  role: 'capataz',
+};
 
 const CreateUserScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -32,22 +40,9 @@ const CreateUserScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [users, setUsers] = useState<UserRow[]>([]);
-  const [formData, setFormData] = useState<UserFormData>({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    role: 'capataz',
-    name: '',
-    phone: ''
-  });
+  const [users, setUsers] = useState<User[]>([]);
+  const [formData, setFormData] = useState<UserFormData>(initialFormData);
   const logout = useLogout();
-
-  useEffect(() => {
-    if (currentUser?.role !== 'admin') {
-      navigate('/home');
-    }
-  }, [currentUser, navigate]);
 
   useEffect(() => {
     if (currentUser) {
@@ -56,58 +51,26 @@ const CreateUserScreen: React.FC = () => {
       setUsers([]);
       setError('Debes iniciar sesión para ver los usuarios.');
     }
-    // eslint-disable-next-line
   }, [currentUser]);
 
   const fetchUsers = async () => {
-    setLoading(true);
-    setError('');
     try {
-      // Obtener token del usuario admin
-      const userData = localStorage.getItem('user');
-      const token = userData ? JSON.parse(userData).token : null;
-      if (!token) throw new Error('No hay token de autenticación');
-      // Llamar al endpoint del backend
-      const res = await fetch(`${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/auth/users`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const querySnapshot = await getDocs(collection(db, 'Users'));
+      const usersList = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          uid: data.uid,
+          email: data.email,
+          name: data.name,
+          phone: data.phone || '',
+          role: data.role,
+          lastSignIn: data.lastSignIn || '',
+        } as User;
       });
-      if (!res.ok) {
-        throw new Error('No se pudo obtener la lista de usuarios');
-      }
-      const data = await res.json();
-      // Mapear los datos para la tabla
-      const usersList: UserRow[] = data.users.map((u: any) => ({
-        uid: u.uid,
-        email: u.email,
-        name: u.displayName || '',
-        phone: u.phoneNumber || '',
-        lastSignInTime: u.metadata?.lastSignInTime,
-        creationTime: u.metadata?.creationTime,
-        disabled: u.disabled,
-        role: '' // Se completará con Firestore abajo
-      }));
-      // Obtener roles y nombres desde Firestore
-      const usersCollection = collection(db, 'Users');
-      const usersSnapshot = await getDocs(usersCollection);
-      const firestoreMap: Record<string, any> = {};
-      usersSnapshot.docs.forEach(docu => {
-        firestoreMap[docu.id] = docu.data();
-      });
-      // Mezclar datos de Auth y Firestore
-      const mergedUsers = usersList.map(u => ({
-        ...u,
-        role: firestoreMap[u.uid]?.role || '',
-        name: firestoreMap[u.uid]?.name || u.name,
-        phone: firestoreMap[u.uid]?.phone || u.phone
-      }));
-      setUsers(mergedUsers);
-    } catch (error: any) {
-      setError(error.message || 'Error al cargar los usuarios');
-    } finally {
-      setLoading(false);
+      setUsers(usersList);
+    } catch (error) {
+      setError('Error al cargar los usuarios');
     }
   };
 
@@ -133,55 +96,46 @@ const CreateUserScreen: React.FC = () => {
       ...prev,
       [name]: value
     }));
-  };
-
-  const handlePasswordReset = async (email: string) => {
     setError('');
     setSuccess('');
-    try {
-      await sendPasswordResetEmail(auth, email);
-      setSuccess('Correo de cambio de contraseña enviado');
-    } catch (error: any) {
-      setError('No se pudo enviar el correo de cambio de contraseña');
-    }
+  };
+
+  const validate = () => {
+    if (!formData.email || !formData.email.includes('@')) return 'Correo inválido';
+    if (!formData.name) return 'El nombre es obligatorio';
+    if (!formData.phone || !/^\d{7,15}$/.test(formData.phone)) return 'Teléfono inválido';
+    if (!formData.password || formData.password.length < 6) return 'Contraseña muy corta';
+    if (formData.password !== formData.confirmPassword) return 'Las contraseñas no coinciden';
+    return '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    const validation = validate();
+    if (validation) {
+      setError(validation);
+      return;
+    }
     setLoading(true);
     try {
-      if (!formData.name.trim()) throw new Error('El nombre es obligatorio');
-      if (!formData.phone.trim()) throw new Error('El teléfono es obligatorio');
-      if (formData.password !== formData.confirmPassword) {
-        throw new Error('Las contraseñas no coinciden');
-      }
-      if (formData.password.length < 6) {
-        throw new Error('La contraseña debe tener al menos 6 caracteres');
-      }
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         formData.email,
         formData.password
       );
-      await setDoc(doc(db, 'Users', userCredential.user.uid), {
-        uid: userCredential.user.uid,
+      const newUser = userCredential.user;
+      await setDoc(doc(db, 'Users', newUser.uid), {
+        uid: newUser.uid,
         email: formData.email,
         name: formData.name,
-        role: formData.role,
         phone: formData.phone,
+        role: formData.role,
         createdAt: new Date().toISOString()
       });
       setSuccess('Usuario creado exitosamente');
-      setFormData({
-        email: '',
-        password: '',
-        confirmPassword: '',
-        role: 'capataz',
-        name: '',
-        phone: ''
-      });
+      setFormData(initialFormData);
       fetchUsers();
     } catch (error: any) {
       switch (error.code) {
@@ -247,7 +201,7 @@ const CreateUserScreen: React.FC = () => {
               onChange={handleChange}
               required
               className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-300 focus:outline-none bg-white bg-opacity-90"
-              placeholder="Número de teléfono"
+              placeholder="Ej: 3001234567"
             />
           </div>
           <div className="flex gap-4">
@@ -320,7 +274,7 @@ const CreateUserScreen: React.FC = () => {
       </div>
 
       {/* Lista de Usuarios */}
-      <div className="w-full max-w-4xl mx-auto mb-10 p-6 rounded-3xl shadow-xl bg-white bg-opacity-90 backdrop-blur-md border border-gray-200">
+      <div className="w-full max-w-4xl mx-auto mt-8 mb-10 p-6 rounded-2xl bg-white bg-opacity-90 shadow-xl border border-gray-200">
         <h3 className="text-2xl font-semibold text-green-800 mb-4 text-center">Usuarios Existentes</h3>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -330,35 +284,30 @@ const CreateUserScreen: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Email</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Teléfono</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Rol</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Último Ingreso</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-green-800 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((user) => (
-                <tr key={user.uid}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.phone}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-semibold">
-                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.lastSignInTime ? new Date(user.lastSignInTime).toLocaleString() : '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex gap-2">
+              {users.map((u) => (
+                <tr key={u.uid} className="text-center">
+                  <td className="px-4 py-2">{u.name}</td>
+                  <td className="px-4 py-2">{u.email}</td>
+                  <td className="px-4 py-2">{u.phone}</td>
+                  <td className="px-4 py-2">{u.role}</td>
+                  <td className="px-4 py-2 flex flex-col gap-2 items-center">
                     <button
-                      onClick={() => handlePasswordReset(user.email)}
-                      className="text-blue-600 hover:text-blue-900 font-bold"
-                      disabled={loading}
-                    >
-                      Cambiar Contraseña
-                    </button>
-                    <button
-                      onClick={() => handleDeleteUser(user.uid)}
-                      className="text-red-600 hover:text-red-900 font-bold"
-                      disabled={loading}
+                      onClick={() => handleDeleteUser(u.uid)}
+                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-xs"
                     >
                       Eliminar
                     </button>
+                    <button
+                      onClick={async () => { await sendPasswordReset(u.email); alert('Correo de cambio de contraseña enviado'); }}
+                      className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs"
+                    >
+                      Cambiar contraseña
+                    </button>
+                    <div className="text-xs text-gray-500 mt-1">Último ingreso: {u.lastSignIn || 'N/A'}</div>
                   </td>
                 </tr>
               ))}

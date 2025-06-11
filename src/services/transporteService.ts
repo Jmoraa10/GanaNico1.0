@@ -1,30 +1,72 @@
+import { db } from '../config/firebase';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
 import { ViajeTransporte, ResumenViaje } from '../types/Transporte';
-import axios from 'axios';
 
-const API_URL = 'http://localhost:3001/api';
+const COLLECTION_NAME = 'transportes';
 
 export const transporteService = {
   async crearViaje(viaje: Omit<ViajeTransporte, 'id' | 'fechaCreacion' | 'fechaActualizacion'>): Promise<ViajeTransporte> {
-    const response = await axios.post(`${API_URL}/transporte`, viaje);
-    return response.data;
+    const viajeData = {
+      ...viaje,
+      fechaCreacion: Timestamp.now(),
+      fechaActualizacion: Timestamp.now(),
+    };
+
+    const docRef = await addDoc(collection(db, COLLECTION_NAME), viajeData);
+    return {
+      ...viajeData,
+      id: docRef.id,
+      fechaCreacion: viajeData.fechaCreacion.toDate(),
+      fechaActualizacion: viajeData.fechaActualizacion.toDate(),
+    } as ViajeTransporte;
   },
 
   async actualizarViaje(id: string, viaje: Partial<ViajeTransporte>): Promise<void> {
-    await axios.put(`${API_URL}/transporte/${id}`, viaje);
+    const viajeRef = doc(db, COLLECTION_NAME, id);
+    await updateDoc(viajeRef, {
+      ...viaje,
+      fechaActualizacion: Timestamp.now(),
+    });
   },
 
   async eliminarViaje(id: string): Promise<void> {
-    await axios.delete(`${API_URL}/transporte/${id}`);
+    await deleteDoc(doc(db, COLLECTION_NAME, id));
   },
 
   async obtenerViajesEnCurso(): Promise<ViajeTransporte[]> {
-    const response = await axios.get(`${API_URL}/transporte/estado/EN_CURSO`);
-    return response.data;
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where('estado', '==', 'EN_CURSO'),
+      orderBy('fechaCreacion', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      ...doc.data(),
+      id: doc.id,
+      fechaCreacion: doc.data().fechaCreacion.toDate(),
+      fechaActualizacion: doc.data().fechaActualizacion.toDate(),
+      horaInicio: doc.data().horaInicio.toDate(),
+      horaCulminacion: doc.data().horaCulminacion?.toDate(),
+    })) as ViajeTransporte[];
   },
 
   async obtenerViajesCulminados(): Promise<ViajeTransporte[]> {
-    const response = await axios.get(`${API_URL}/transporte/estado/CULMINADO`);
-    return response.data;
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where('estado', '==', 'CULMINADO'),
+      orderBy('fechaCreacion', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      ...doc.data(),
+      id: doc.id,
+      fechaCreacion: doc.data().fechaCreacion.toDate(),
+      fechaActualizacion: doc.data().fechaActualizacion.toDate(),
+      horaInicio: doc.data().horaInicio.toDate(),
+      horaCulminacion: doc.data().horaCulminacion?.toDate(),
+    })) as ViajeTransporte[];
   },
 
   calcularResumenViaje(viaje: ViajeTransporte): ResumenViaje {

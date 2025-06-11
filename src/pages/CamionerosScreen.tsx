@@ -62,11 +62,7 @@ const CamionerosScreen: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const viajeData = {
-        ...formData,
-        horaInicio: formData.horaInicio.toISOString(),
-      };
-      await transporteService.crearViaje(viajeData);
+      await transporteService.crearViaje(formData);
       setShowForm(false);
       cargarViajes();
       // Resetear formulario
@@ -95,7 +91,7 @@ const CamionerosScreen: React.FC = () => {
     try {
       await transporteService.actualizarViaje(id, {
         estado: 'CULMINADO',
-        horaCulminacion: new Date().toISOString(),
+        horaCulminacion: new Date(),
       });
       cargarViajes();
     } catch (error) {
@@ -432,7 +428,7 @@ const CamionerosScreen: React.FC = () => {
                   </p>
                   <p className="flex items-center gap-2">
                     <Calendar size={16} className="text-purple-600" />
-                    Inicio: {new Date(viaje.horaInicio).toLocaleString()}
+                    Inicio: {viaje.horaInicio.toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -464,11 +460,11 @@ const CamionerosScreen: React.FC = () => {
                   </p>
                   <p className="flex items-center gap-2">
                     <Calendar size={16} className="text-purple-600" />
-                    Inicio: {new Date(viaje.horaInicio).toLocaleString()}
+                    Inicio: {viaje.horaInicio.toLocaleString()}
                   </p>
                   <p className="flex items-center gap-2">
                     <CheckCircle size={16} className="text-green-600" />
-                    Culminación: {viaje.horaCulminacion ? new Date(viaje.horaCulminacion).toLocaleString() : 'Pendiente'}
+                    Culminación: {viaje.horaCulminacion?.toLocaleString()}
                   </p>
                 </div>
               </div>
