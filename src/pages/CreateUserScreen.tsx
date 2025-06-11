@@ -206,7 +206,7 @@ const CreateUserScreen: React.FC = () => {
     <div
       className="min-h-screen w-full bg-cover bg-center flex flex-col justify-center items-center"
       style={{
-        backgroundImage: "url('/agregar.png')",
+        backgroundImage: "url('/assets/images/agregar.png')",
         backgroundBlendMode: 'overlay',
         backgroundColor: 'rgba(255,255,255,0.7)'
       }}

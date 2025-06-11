@@ -63,6 +63,11 @@ router.get('/users', verifyToken, async (req, res) => {
       return res.status(403).json({ error: 'Solo los administradores pueden ver la lista de usuarios.' });
     }
 
+    // Verificar que admin.auth esté inicializado
+    if (!admin || !admin.auth) {
+      return res.status(500).json({ error: 'Firebase Admin no está inicializado correctamente. Verifica las credenciales.' });
+    }
+
     console.log('✅ Usuario autorizado como admin');
     
     // Listar usuarios de Firebase Auth
@@ -103,7 +108,6 @@ router.get('/users', verifyToken, async (req, res) => {
     res.json({ users });
   } catch (error) {
     console.error('❌ Error al listar usuarios:', error);
-    console.error('Detalles del error:', error);
     res.status(500).json({ 
       error: 'Error al listar usuarios', 
       details: error.message,

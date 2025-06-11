@@ -1,5 +1,13 @@
 const admin = require('firebase-admin');
-const serviceAccount = require('../serviceAccountKey.json');
+
+let serviceAccount;
+if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+  // En producción (Render), la clave viene como string JSON en la variable de entorno
+  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+} else {
+  // En desarrollo local, usamos el archivo
+  serviceAccount = require('../serviceAccountKey.json');
+}
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
