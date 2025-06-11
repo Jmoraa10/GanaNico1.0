@@ -31,10 +31,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     setUser(null);
     localStorage.removeItem('user');
-    console.log('[AuthContext] Limpieza inicial de localStorage y user');
 
     unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      console.log('[AuthContext] onAuthStateChanged:', firebaseUser);
       if (firebaseUser && firebaseUser.email) {
         try {
           const userDoc = await getDoc(doc(db, 'Users', firebaseUser.uid));
@@ -69,11 +67,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               name: userData?.name
             }));
             setUser(newUser);
-            console.log('[AuthContext] Usuario seteado:', newUser);
           } else {
             setUser(null);
             localStorage.removeItem('user');
-            console.log('[AuthContext] Token inválido, usuario removido');
           }
           if (ADMIN_EMAILS.includes(userEmail) && userData?.role !== 'admin') {
             await setDoc(doc(db, 'Users', firebaseUser.uid), {
@@ -92,10 +88,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setUser(null);
         localStorage.removeItem('user');
-        console.log('[AuthContext] No hay usuario autenticado, localStorage limpiado');
       }
       setLoading(false);
-      console.log('[AuthContext] Loading:', false);
     });
 
     return () => {
