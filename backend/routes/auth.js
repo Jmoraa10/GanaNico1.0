@@ -55,30 +55,57 @@ router.get('/users', verifyToken, async (req, res) => {
       'johanmora.jm@gmail.com',
       'mora.castro.raul@gmail.com'
     ];
+    console.log('🔍 Usuario autenticado:', req.user.email);
+    console.log('🔑 Token decodificado:', req.user);
+    
     if (!adminEmails.includes(req.user.email)) {
+      console.log('❌ Acceso denegado: Usuario no es admin');
       return res.status(403).json({ error: 'Solo los administradores pueden ver la lista de usuarios.' });
     }
+
+    console.log('✅ Usuario autorizado como admin');
+    
     // Listar usuarios de Firebase Auth
     const listAllUsers = async (nextPageToken, accum = []) => {
-      const result = await admin.auth().listUsers(1000, nextPageToken);
-      accum.push(...result.users.map(userRecord => ({
-        uid: userRecord.uid,
-        email: userRecord.email,
-        displayName: userRecord.displayName,
-        phoneNumber: userRecord.phoneNumber,
-        disabled: userRecord.disabled,
-        metadata: userRecord.metadata
-      })));
-      if (result.pageToken) {
-        return listAllUsers(result.pageToken, accum);
+      try {
+        console.log('📋 Listando usuarios con token:', nextPageToken || 'inicial');
+        const result = await admin.auth().listUsers(1000, nextPageToken);
+        console.log(`✅ Usuarios obtenidos: ${result.users.length}`);
+        
+        const users = result.users.map(userRecord => ({
+          uid: userRecord.uid,
+          email: userRecord.email,
+          displayName: userRecord.displayName,
+          phoneNumber: userRecord.phoneNumber,
+          disabled: userRecord.disabled,
+          metadata: userRecord.metadata
+        }));
+        
+        accum.push(...users);
+        
+        if (result.pageToken) {
+          console.log('🔄 Hay más usuarios, continuando con paginación...');
+          return listAllUsers(result.pageToken, accum);
+        }
+        
+        return accum;
+      } catch (error) {
+        console.error('❌ Error en listAllUsers:', error);
+        throw error;
       }
-      return accum;
     };
+
     const users = await listAllUsers();
+    console.log(`✅ Total de usuarios listados: ${users.length}`);
     res.json({ users });
   } catch (error) {
-    console.error('Error al listar usuarios:', error);
-    res.status(500).json({ error: 'Error al listar usuarios', details: error.message });
+    console.error('❌ Error al listar usuarios:', error);
+    console.error('Detalles del error:', error);
+    res.status(500).json({ 
+      error: 'Error al listar usuarios', 
+      details: error.message,
+      code: error.code
+    });
   }
 });
 

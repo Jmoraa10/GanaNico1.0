@@ -21,28 +21,19 @@ if (!process.env.FIREBASE_PRIVATE_KEY || !process.env.MONGODB_URI) {
 }
 
 // Configuración Firebase Admin
-const serviceAccount = {
-  type: 'service_account',
-  project_id: process.env.FIREBASE_PROJECT_ID,
-  private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n').trim(),
-  client_email: process.env.FIREBASE_CLIENT_EMAIL
-};
-
-// Verificación adicional de la clave privada
-if (!serviceAccount.private_key || !serviceAccount.private_key.includes('-----BEGIN PRIVATE KEY-----')) {
-  console.error('❌ La clave privada de Firebase no está correctamente formateada');
-  console.error('Asegúrate de que la clave esté entre comillas dobles y mantenga los saltos de línea \\n');
-  process.exit(1);
-}
+const serviceAccount = require('./serviceAccountKey.json');
 
 try {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`
+    databaseURL: `https://${serviceAccount.project_id}.firebaseio.com`
   });
   console.log('✅ Firebase Admin inicializado correctamente');
+  console.log('📧 Email del servicio:', serviceAccount.client_email);
+  console.log('🔑 Project ID:', serviceAccount.project_id);
 } catch (error) {
   console.error('❌ Error al inicializar Firebase Admin:', error.message);
+  console.error('Detalles del error:', error);
   process.exit(1);
 }
 
