@@ -1,12 +1,10 @@
 import axios from 'axios';
 
-const isDevelopment = process.env.NODE_ENV === 'development';
-const API_URL = isDevelopment 
-  ? 'http://localhost:3000'
-  : 'https://gananico1-0.onrender.com';
+const PRODUCTION_URL = 'https://gananico1-0.onrender.com';
+const DEVELOPMENT_URL = 'http://localhost:3000';
 
 export const api = axios.create({
-  baseURL: API_URL,
+  baseURL: process.env.NODE_ENV === 'production' ? PRODUCTION_URL : DEVELOPMENT_URL,
   headers: {
     'Content-Type': 'application/json'
   }

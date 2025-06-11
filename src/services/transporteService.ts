@@ -1,7 +1,7 @@
 import { ViajeTransporte, ResumenViaje } from '../types/Transporte';
-import { api } from '../config/api';
+import { api } from '../config/api.js';
 
-const BASE_URL = '/api/transportes';
+const BASE_URL = '/transportes';
 
 export const transporteService = {
   async crearViaje(viaje: Omit<ViajeTransporte, 'id' | 'fechaCreacion' | 'fechaActualizacion'>): Promise<ViajeTransporte> {

@@ -12,7 +12,6 @@ const dashboardRoutes = require('./routes/dashboard');
 const ventaRoutes = require('./routes/ventaRoutes');
 const subastaRoutes = require('./routes/subastas');
 const agendaRoutes = require('./routes/agenda');
-const transporteRoutes = require('./routes/transporteRoutes');
 const { authenticate } = require('./middleware/auth');
 
 // Verificación crítica de variables
@@ -60,32 +59,6 @@ const firebaseApp = initializeApp(firebaseConfig);
 
 const app = express();
 
-// Configuración CORS
-const allowedDomains = [
-  'http://localhost',
-  'http://localhost:5173',
-  'https://inversiones-bonitoviento-sas.firebaseapp.com',
-  'https://inversiones-bonitoviento-sas.web.app',
-  'https://inversiones-bonitoviento-sas.onrender.com',
-  'https://gananico1-0.onrender.com'
-];
-
-app.use(cors({
-  origin: function(origin, callback) {
-    // Permitir solicitudes sin origen (como las de Postman)
-    if (!origin) return callback(null, true);
-    
-    if (allowedDomains.indexOf(origin) === -1) {
-      const msg = 'La política CORS para este sitio no permite acceso desde el origen especificado.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
 // Conexión a MongoDB Atlas
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB Atlas conectado'))
@@ -93,19 +66,58 @@ mongoose.connect(process.env.MONGODB_URI)
     console.error('❌ Error de conexión a MongoDB Atlas:', err.message);
   });
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Middleware para logging de todas las rutas
+app.use((req, res, next) => {
+  console.log(`📨 ${req.method} ${req.path}`);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  next();
+});
 
-// Rutas
-app.use('/api/auth', authRoutes);
-app.use('/api/fincas', fincaRoutes);
-app.use('/api/movimientos', movimientoRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/ventas', ventaRoutes);
-app.use('/api/subastas', subastaRoutes);
-app.use('/api/agenda', agendaRoutes);
-app.use('/api/transportes', transporteRoutes);
+// Configuración CORS
+const allowedDomains = process.env.ALLOWED_ORIGINS ? 
+  process.env.ALLOWED_ORIGINS.split(',') : [
+    'http://localhost',
+    'http://localhost:5173',
+    'https://inversiones-bonitoviento-sas.firebaseapp.com',
+    'https://inversiones-bonitoviento-sas.web.app',
+    'https://inversiones-bonitoviento-sas.onrender.com',
+    'https://gananico1-0.onrender.com'
+  ];
+
+// Configuración de CORS usando el middleware de cors
+app.use(cors({
+  origin: function (origin, callback) {
+    // Permitir solicitudes sin origin (como las de Postman)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Solo permite coincidencia exacta
+    if (allowedDomains.includes(origin)) {
+      console.log('✅ CORS permitido para:', origin);
+      return callback(null, true);
+    } else {
+      console.log('⚠️ CORS bloqueado para:', origin);
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Firebase-Token', 'Accept'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+}));
+
+app.use(express.json());
+
+// Ruta raíz para verificar que el servidor está funcionando
+app.get('/', (req, res) => {
+  res.json({
+    status: '✅ Servidor funcionando',
+    message: 'API de Inversiones Bonito Viento',
+    version: '1.0.0'
+  });
+});
 
 // Rutas de health check
 app.get('/health', (req, res) => {
@@ -135,6 +147,24 @@ app.get('/api/health', (req, res) => {
       origin: req.headers.origin,
       allowedDomains
     }
+  });
+});
+
+// Rutas de la API
+app.use('/api/auth', authRoutes);
+app.use('/api/fincas', authenticate, fincaRoutes);
+app.use('/api/movimientos', authenticate, movimientoRoutes);
+app.use('/api/dashboard', authenticate, dashboardRoutes);
+app.use('/api/ventas', authenticate, ventaRoutes);
+app.use('/api/subastas', subastaRoutes);
+app.use('/api/agenda', agendaRoutes);
+
+// Manejo de errores
+app.use((err, req, res, next) => {
+  console.error(`💥 Error: ${err.message}`);
+  res.status(500).json({ 
+    error: 'Error interno del servidor',
+    message: err.message
   });
 });
 
