@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Home, LogOut, Plus, CheckCircle, Clock, Truck, DollarSign, Calendar } from "lucide-react";
 import { ViajeTransporte, TipoCarga, TipoAnimal, AnimalTransporte, SuministroTransporte } from '../types/Transporte';
 import { transporteService } from '../services/transporteService';
+import { Dialog } from '@headlessui/react';
 
 const TIPOS_ANIMALES: { value: TipoAnimal; label: string }[] = [
   { value: 'MACHO_CEBA', label: 'Machos de Ceba' },
@@ -18,9 +19,12 @@ const TIPOS_ANIMALES: { value: TipoAnimal; label: string }[] = [
 const CamionerosScreen: React.FC = () => {
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [selectedViaje, setSelectedViaje] = useState<ViajeTransporte | null>(null);
+  const [completionDetails, setCompletionDetails] = useState('');
   const [viajesEnCurso, setViajesEnCurso] = useState<ViajeTransporte[]>([]);
   const [viajesCulminados, setViajesCulminados] = useState<ViajeTransporte[]>([]);
-  const [,setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -46,6 +50,7 @@ const CamionerosScreen: React.FC = () => {
 
   const cargarViajes = async () => {
     try {
+      setLoading(true);
       const [enCurso, culminados] = await Promise.all([
         transporteService.obtenerViajesEnCurso(),
         transporteService.obtenerViajesCulminados(),
@@ -62,7 +67,11 @@ const CamionerosScreen: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await transporteService.crearViaje(formData);
+      const viajeData = {
+        ...formData,
+        horaInicio: new Date(),
+      };
+      await transporteService.crearViaje(viajeData);
       setShowForm(false);
       cargarViajes();
       // Resetear formulario
@@ -87,16 +96,48 @@ const CamionerosScreen: React.FC = () => {
     }
   };
 
-  const handleCulminarViaje = async (id: string) => {
+  const handleCompletarViaje = async (viaje: ViajeTransporte) => {
+    setSelectedViaje(viaje);
+    setShowCompletionDialog(true);
+  };
+
+  const handleConfirmarCompletar = async () => {
+    if (!selectedViaje) return;
+
     try {
-      await transporteService.actualizarViaje(id, {
+      await transporteService.actualizarViaje(selectedViaje.id!, {
         estado: 'CULMINADO',
         horaCulminacion: new Date(),
+        detallesAdicionales: completionDetails,
       });
+      setShowCompletionDialog(false);
+      setCompletionDetails('');
+      setSelectedViaje(null);
       cargarViajes();
     } catch (error) {
-      console.error('Error al culminar viaje:', error);
+      console.error('Error al completar viaje:', error);
     }
+  };
+
+  const formatDate = (date: Date | string) => {
+    const d = new Date(date);
+    return d.toLocaleString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const calcularDuracion = (inicio: Date | string, fin: Date | string) => {
+    const start = new Date(inicio);
+    const end = new Date(fin);
+    const diffMs = end.getTime() - start.getTime();
+    const diffMins = Math.round(diffMs / 60000);
+    const hours = Math.floor(diffMins / 60);
+    const minutes = diffMins % 60;
+    return `${hours}h ${minutes}m`;
   };
 
   const agregarAnimal = () => {
@@ -403,34 +444,39 @@ const CamionerosScreen: React.FC = () => {
             Viajes en Curso
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {viajesEnCurso.map(viaje => (
-              <div key={viaje.id} className="bg-white rounded-xl shadow-lg p-4">
+            {viajesEnCurso.map((viaje) => (
+              <div key={viaje.id} className="bg-white rounded-lg shadow p-4">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="font-bold text-lg">{viaje.camionero}</h3>
-                    <p className="text-gray-600">{viaje.origen} → {viaje.destino}</p>
+                    <h3 className="font-semibold">{viaje.camionero}</h3>
+                    <p className="text-sm text-gray-600">
+                      {viaje.origen} → {viaje.destino}
+                    </p>
                   </div>
-                  <button
-                    onClick={() => handleCulminarViaje(viaje.id!)}
-                    className="text-green-600 hover:text-green-700"
-                  >
-                    <CheckCircle size={24} />
-                  </button>
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+                    En Curso
+                  </span>
                 </div>
                 <div className="space-y-2">
-                  <p className="flex items-center gap-2">
-                    <Truck size={16} className="text-blue-600" />
-                    {viaje.tipoCarga === 'ANIMALES' ? 'Transporte de Animales' : 'Transporte de Suministros'}
+                  <p className="text-sm">
+                    <Clock className="inline-block w-4 h-4 mr-1" />
+                    Inicio: {formatDate(viaje.horaInicio)}
                   </p>
-                  <p className="flex items-center gap-2">
-                    <DollarSign size={16} className="text-green-600" />
-                    Total Gastos: ${viaje.gastos.diesel + viaje.gastos.peajes + viaje.gastos.viaticos}
+                  <p className="text-sm">
+                    <Truck className="inline-block w-4 h-4 mr-1" />
+                    Carga: {viaje.tipoCarga}
                   </p>
-                  <p className="flex items-center gap-2">
-                    <Calendar size={16} className="text-purple-600" />
-                    Inicio: {viaje.horaInicio.toLocaleString()}
+                  <p className="text-sm">
+                    <DollarSign className="inline-block w-4 h-4 mr-1" />
+                    Gastos: ${viaje.gastos.diesel + viaje.gastos.peajes + viaje.gastos.viaticos}
                   </p>
                 </div>
+                <button
+                  onClick={() => handleCompletarViaje(viaje)}
+                  className="mt-4 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Marcar como Completado
+                </button>
               </div>
             ))}
           </div>
@@ -443,35 +489,94 @@ const CamionerosScreen: React.FC = () => {
             Viajes Culminados
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {viajesCulminados.map(viaje => (
-              <div key={viaje.id} className="bg-white rounded-xl shadow-lg p-4">
-                <div className="mb-4">
-                  <h3 className="font-bold text-lg">{viaje.camionero}</h3>
-                  <p className="text-gray-600">{viaje.origen} → {viaje.destino}</p>
+            {viajesCulminados.map((viaje) => (
+              <div key={viaje.id} className="bg-white rounded-lg shadow p-4">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="font-semibold">{viaje.camionero}</h3>
+                    <p className="text-sm text-gray-600">
+                      {viaje.origen} → {viaje.destino}
+                    </p>
+                  </div>
+                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                    Completado
+                  </span>
                 </div>
                 <div className="space-y-2">
-                  <p className="flex items-center gap-2">
-                    <Truck size={16} className="text-blue-600" />
-                    {viaje.tipoCarga === 'ANIMALES' ? 'Transporte de Animales' : 'Transporte de Suministros'}
+                  <p className="text-sm">
+                    <Clock className="inline-block w-4 h-4 mr-1" />
+                    Inicio: {formatDate(viaje.horaInicio)}
                   </p>
-                  <p className="flex items-center gap-2">
-                    <DollarSign size={16} className="text-green-600" />
-                    Total Gastos: ${viaje.gastos.diesel + viaje.gastos.peajes + viaje.gastos.viaticos}
+                  {viaje.horaCulminacion && (
+                    <p className="text-sm">
+                      <Calendar className="inline-block w-4 h-4 mr-1" />
+                      Fin: {formatDate(viaje.horaCulminacion)}
+                    </p>
+                  )}
+                  <p className="text-sm">
+                    <Truck className="inline-block w-4 h-4 mr-1" />
+                    Carga: {viaje.tipoCarga}
                   </p>
-                  <p className="flex items-center gap-2">
-                    <Calendar size={16} className="text-purple-600" />
-                    Inicio: {viaje.horaInicio.toLocaleString()}
+                  <p className="text-sm">
+                    <DollarSign className="inline-block w-4 h-4 mr-1" />
+                    Gastos: ${viaje.gastos.diesel + viaje.gastos.peajes + viaje.gastos.viaticos}
                   </p>
-                  <p className="flex items-center gap-2">
-                    <CheckCircle size={16} className="text-green-600" />
-                    Culminación: {viaje.horaCulminacion?.toLocaleString()}
-                  </p>
+                  {viaje.horaCulminacion && (
+                    <p className="text-sm">
+                      Duración: {calcularDuracion(viaje.horaInicio, viaje.horaCulminacion)}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Dialog para completar viaje */}
+      <Dialog
+        open={showCompletionDialog}
+        onClose={() => setShowCompletionDialog(false)}
+        className="fixed inset-0 z-10 overflow-y-auto"
+      >
+        <div className="flex items-center justify-center min-h-screen">
+          <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
+
+          <div className="relative bg-white rounded-lg max-w-md w-full mx-4 p-6">
+            <Dialog.Title className="text-lg font-medium mb-4">
+              Completar Viaje
+            </Dialog.Title>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Detalles de Finalización
+              </label>
+              <textarea
+                value={completionDetails}
+                onChange={(e) => setCompletionDetails(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={4}
+                placeholder="Ingrese detalles relevantes sobre el viaje..."
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowCompletionDialog(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmarCompletar}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 };

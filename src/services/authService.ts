@@ -248,7 +248,7 @@ export const sendPasswordReset = async (email: string) => {
   await sendPasswordResetEmail(auth, email);
 };
 
-export const getLastSignIn = async (uid: string) => {
+export const getLastSignIn = async () => {
   // Se debe obtener desde Firebase Auth, no Firestore
   // Esto requiere privilegios de admin en backend, pero aquí solo retornamos null
   return null;

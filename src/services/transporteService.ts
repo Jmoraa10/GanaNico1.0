@@ -1,72 +1,34 @@
-import { db } from '../config/firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import { transportApi } from './api';
 import { ViajeTransporte, ResumenViaje } from '../types/Transporte';
-
-const COLLECTION_NAME = 'transportes';
 
 export const transporteService = {
   async crearViaje(viaje: Omit<ViajeTransporte, 'id' | 'fechaCreacion' | 'fechaActualizacion'>): Promise<ViajeTransporte> {
-    const viajeData = {
-      ...viaje,
-      fechaCreacion: Timestamp.now(),
-      fechaActualizacion: Timestamp.now(),
-    };
-
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), viajeData);
-    return {
-      ...viajeData,
-      id: docRef.id,
-      fechaCreacion: viajeData.fechaCreacion.toDate(),
-      fechaActualizacion: viajeData.fechaActualizacion.toDate(),
-    } as ViajeTransporte;
+    const response = await transportApi.crearViaje(viaje);
+    return response.data;
   },
 
-  async actualizarViaje(id: string, viaje: Partial<ViajeTransporte>): Promise<void> {
-    const viajeRef = doc(db, COLLECTION_NAME, id);
-    await updateDoc(viajeRef, {
-      ...viaje,
-      fechaActualizacion: Timestamp.now(),
-    });
+  async actualizarViaje(id: string, viaje: Partial<ViajeTransporte>): Promise<ViajeTransporte> {
+    const response = await transportApi.actualizarViaje(id, viaje);
+    return response.data;
   },
 
   async eliminarViaje(id: string): Promise<void> {
-    await deleteDoc(doc(db, COLLECTION_NAME, id));
+    await transportApi.eliminarViaje(id);
   },
 
   async obtenerViajesEnCurso(): Promise<ViajeTransporte[]> {
-    const q = query(
-      collection(db, COLLECTION_NAME),
-      where('estado', '==', 'EN_CURSO'),
-      orderBy('fechaCreacion', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      ...doc.data(),
-      id: doc.id,
-      fechaCreacion: doc.data().fechaCreacion.toDate(),
-      fechaActualizacion: doc.data().fechaActualizacion.toDate(),
-      horaInicio: doc.data().horaInicio.toDate(),
-      horaCulminacion: doc.data().horaCulminacion?.toDate(),
-    })) as ViajeTransporte[];
+    const response = await transportApi.obtenerViajesEnCurso();
+    return response.data;
   },
 
   async obtenerViajesCulminados(): Promise<ViajeTransporte[]> {
-    const q = query(
-      collection(db, COLLECTION_NAME),
-      where('estado', '==', 'CULMINADO'),
-      orderBy('fechaCreacion', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      ...doc.data(),
-      id: doc.id,
-      fechaCreacion: doc.data().fechaCreacion.toDate(),
-      fechaActualizacion: doc.data().fechaActualizacion.toDate(),
-      horaInicio: doc.data().horaInicio.toDate(),
-      horaCulminacion: doc.data().horaCulminacion?.toDate(),
-    })) as ViajeTransporte[];
+    const response = await transportApi.obtenerViajesCulminados();
+    return response.data;
+  },
+
+  async obtenerViaje(id: string): Promise<ViajeTransporte> {
+    const response = await transportApi.obtenerViaje(id);
+    return response.data;
   },
 
   calcularResumenViaje(viaje: ViajeTransporte): ResumenViaje {

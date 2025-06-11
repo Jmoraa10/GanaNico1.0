@@ -92,4 +92,15 @@ export const checkHealth = async (): Promise<HealthResponse> => {
   }
 };
 
+// Transport endpoints
+export const transportApi = {
+  crearViaje: (data: any) => API.post('/transporte', data),
+  obtenerViajes: () => API.get('/transporte'),
+  obtenerViajesEnCurso: () => API.get('/transporte/en-curso'),
+  obtenerViajesCulminados: () => API.get('/transporte/culminados'),
+  obtenerViaje: (id: string) => API.get(`/transporte/${id}`),
+  actualizarViaje: (id: string, data: any) => API.put(`/transporte/${id}`, data),
+  eliminarViaje: (id: string) => API.delete(`/transporte/${id}`),
+};
+
 export default API;
