@@ -7,15 +7,15 @@ const { verificarToken, esAdmin } = require('../middleware/auth');
 router.use(verificarToken);
 
 // Rutas para administradores
-router.post('/', esAdmin, transporteController.crearViaje);
-router.put('/:id', esAdmin, transporteController.actualizarViaje);
-router.delete('/:id', esAdmin, transporteController.eliminarViaje);
+router.post('/crear', esAdmin, transporteController.crearViaje);
+router.put('/actualizar/:id', esAdmin, transporteController.actualizarViaje);
+router.delete('/eliminar/:id', esAdmin, transporteController.eliminarViaje);
 
 // Rutas para todos los usuarios autenticados
-router.get('/', transporteController.obtenerViajes);
+router.get('/todos', transporteController.obtenerViajes);
 router.get('/en-curso', transporteController.obtenerViajesEnCurso);
 router.get('/culminados', transporteController.obtenerViajesCulminados);
-router.get('/:id', transporteController.obtenerViaje);
+router.get('/detalle/:id', transporteController.obtenerViaje);
 router.get('/resumen/total', esAdmin, transporteController.obtenerResumen);
 
 module.exports = router; 

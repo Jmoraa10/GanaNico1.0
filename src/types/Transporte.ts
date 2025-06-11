@@ -11,7 +11,7 @@ export type TipoAnimal =
 export type TipoCarga = 'ANIMALES' | 'SUMINISTROS';
 
 export interface AnimalTransporte {
-  tipo: 'MACHO_CEBA' | 'MACHO_LEVANTE' | 'HEMBRA_LEVANTE' | 'HEMBRA_VIENTRE' | 'VACA_ESCOTERA' | 'VACA_PARIDA' | 'BUFALO_MACHO' | 'BUFALO_HEMBRA';
+  tipo: TipoAnimal;
   cantidad: number;
 }
 
@@ -28,27 +28,28 @@ export interface GastoTransporte {
 }
 
 export interface ViajeTransporte {
-  id: string;
+  id?: string;
   camionero: string;
   origen: string;
   destino: string;
-  tipoCarga: 'ANIMALES' | 'SUMINISTROS';
-  animales: AnimalTransporte[];
-  suministros: SuministroTransporte[];
+  tipoCarga: TipoCarga;
+  animales?: AnimalTransporte[];
+  suministros?: SuministroTransporte[];
   gastos: GastoTransporte;
   detallesAdicionales?: string;
+  detallesFinalizacion?: string;
   horaInicio: Date;
   estado: 'EN_CURSO' | 'CULMINADO';
   horaCulminacion?: Date;
-  duracionViaje: number;
   fechaCreacion: Date;
   fechaActualizacion: Date;
+  resumen?: ResumenViaje;
 }
 
 export interface ResumenViaje {
   totalAnimales: number;
-  resumenAnimales: Record<string, number>;
+  resumenAnimales: { [key in TipoAnimal]?: number };
   totalSuministros: number;
   totalGastos: number;
-  duracionViaje: number;
+  duracionViaje?: number;
 } 

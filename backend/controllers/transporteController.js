@@ -9,7 +9,11 @@ exports.crearViaje = async (req, res) => {
       estado: 'EN_CURSO'
     });
     await transporte.save();
-    res.status(201).json(transporte);
+    const viajeConResumen = {
+      ...transporte.toObject(),
+      resumen: transporte.calcularResumen()
+    };
+    res.status(201).json(viajeConResumen);
   } catch (error) {
     res.status(400).json({ mensaje: error.message });
   }
@@ -78,23 +82,21 @@ exports.obtenerViaje = async (req, res) => {
 exports.actualizarViaje = async (req, res) => {
   try {
     const { detallesFinalizacion } = req.body;
-    const updateData = { ...req.body };
-    
-    // Si se está marcando como culminado, agregar la hora de culminación
-    if (req.body.estado === 'CULMINADO' && !req.body.horaCulminacion) {
-      updateData.horaCulminacion = new Date();
-      updateData.detallesAdicionales = detallesFinalizacion || req.body.detallesAdicionales;
-    }
-
-    const viaje = await Transporte.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
-    );
+    const viaje = await Transporte.findById(req.params.id);
     
     if (!viaje) {
       return res.status(404).json({ mensaje: 'Viaje no encontrado' });
     }
+
+    // Si se está marcando como culminado, actualizar la hora de culminación
+    if (req.body.estado === 'CULMINADO' && viaje.estado === 'EN_CURSO') {
+      viaje.horaCulminacion = new Date();
+      viaje.detallesAdicionales = detallesFinalizacion;
+    }
+
+    // Actualizar los demás campos
+    Object.assign(viaje, req.body);
+    await viaje.save();
 
     const viajeConResumen = {
       ...viaje.toObject(),
@@ -182,6 +184,7 @@ exports.obtenerResumen = async (req, res) => {
           horaInicio: viaje.horaInicio,
           horaCulminacion: viaje.horaCulminacion,
           duracion: viajeResumen.duracionViaje,
+          detallesAdicionales: viaje.detallesAdicionales,
           resumen: viajeResumen
         });
       }

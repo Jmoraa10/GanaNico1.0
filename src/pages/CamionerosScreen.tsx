@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Home, LogOut, Plus, CheckCircle, Clock, Truck, DollarSign, Calendar } from "lucide-react";
 import { ViajeTransporte, TipoCarga, TipoAnimal, AnimalTransporte, SuministroTransporte } from '../types/Transporte';
 import { transporteService } from '../services/transporteService';
+import { Dialog } from '@headlessui/react';
 
 const TIPOS_ANIMALES: { value: TipoAnimal; label: string }[] = [
   { value: 'MACHO_CEBA', label: 'Machos de Ceba' },
@@ -15,12 +16,16 @@ const TIPOS_ANIMALES: { value: TipoAnimal; label: string }[] = [
   { value: 'BUFALO_HEMBRA', label: 'Búfalos Hembras' },
 ];
 
-const CamionerosScreen: React.FC = () => {
+export const CamionerosScreen = () => {
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [viajesEnCurso, setViajesEnCurso] = useState<ViajeTransporte[]>([]);
   const [viajesCulminados, setViajesCulminados] = useState<ViajeTransporte[]>([]);
-  const [,setLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
+  const [, setError] = useState<string | null>(null);
+  const [isFinalizarDialogOpen, setIsFinalizarDialogOpen] = useState(false);
+  const [viajeSeleccionado, setViajeSeleccionado] = useState<ViajeTransporte | null>(null);
+  const [detallesFinalizacion, setDetallesFinalizacion] = useState('');
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -46,26 +51,26 @@ const CamionerosScreen: React.FC = () => {
 
   const cargarViajes = async () => {
     try {
+      setIsLoading(true);
       const [enCurso, culminados] = await Promise.all([
         transporteService.obtenerViajesEnCurso(),
-        transporteService.obtenerViajesCulminados(),
+        transporteService.obtenerViajesCulminados()
       ]);
       setViajesEnCurso(enCurso);
       setViajesCulminados(culminados);
-    } catch (error) {
-      console.error('Error al cargar viajes:', error);
+      setError(null);
+    } catch (err) {
+      setError('Error al cargar los viajes');
+      console.error(err);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await transporteService.crearViaje({
-        ...formData,
-        duracionViaje: 0, // Valor inicial, ajustar según lógica de negocio si es necesario
-      });
+      await transporteService.crearViaje(formData);
       setShowForm(false);
       cargarViajes();
       // Resetear formulario
@@ -90,17 +95,30 @@ const CamionerosScreen: React.FC = () => {
     }
   };
 
-  const handleCulminarViaje = async (id: string) => {
+  const handleFinalizarViaje = async (viaje: ViajeTransporte) => {
+    setViajeSeleccionado(viaje);
+    setIsFinalizarDialogOpen(true);
+  };
+
+  const confirmarFinalizacion = async () => {
+    if (!viajeSeleccionado) return;
+
     try {
-      await transporteService.actualizarViaje(id, {
+      await transporteService.actualizarViaje(viajeSeleccionado.id!, {
         estado: 'CULMINADO',
-        horaCulminacion: new Date(),
+        detallesFinalizacion
       });
-      cargarViajes();
-    } catch (error) {
-      console.error('Error al culminar viaje:', error);
+      await cargarViajes();
+      setIsFinalizarDialogOpen(false);
+      setDetallesFinalizacion('');
+      setViajeSeleccionado(null);
+    } catch (err) {
+      setError('Error al finalizar el viaje');
+      console.error(err);
     }
   };
+
+
 
   const agregarAnimal = () => {
     setFormData(prev => ({
@@ -414,7 +432,7 @@ const CamionerosScreen: React.FC = () => {
                     <p className="text-gray-600">{viaje.origen} → {viaje.destino}</p>
                   </div>
                   <button
-                    onClick={() => handleCulminarViaje(viaje.id!)}
+                    onClick={() => handleFinalizarViaje(viaje)}
                     className="text-green-600 hover:text-green-700"
                   >
                     <CheckCircle size={24} />
@@ -475,8 +493,54 @@ const CamionerosScreen: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Diálogo de Finalización */}
+      <Dialog
+        open={isFinalizarDialogOpen}
+        onClose={() => setIsFinalizarDialogOpen(false)}
+        className="fixed inset-0 z-10 overflow-y-auto"
+      >
+        <div className="flex items-center justify-center min-h-screen">
+          <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
+
+          <div className="relative bg-white rounded-lg max-w-md w-full mx-4 p-6">
+            <Dialog.Title className="text-lg font-medium text-gray-900 mb-4">
+              Finalizar Viaje
+            </Dialog.Title>
+
+            <div className="mt-2">
+              <label htmlFor="detalles" className="block text-sm font-medium text-gray-700">
+                Detalles de Finalización
+              </label>
+              <textarea
+                id="detalles"
+                rows={4}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                value={detallesFinalizacion}
+                onChange={(e) => setDetallesFinalizacion(e.target.value)}
+                placeholder="Ingrese detalles relevantes sobre el viaje..."
+              />
+            </div>
+
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                type="button"
+                className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                onClick={() => setIsFinalizarDialogOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                onClick={confirmarFinalizacion}
+              >
+                Confirmar Finalización
+              </button>
+            </div>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
-};
-
-export default CamionerosScreen; 
+}; 

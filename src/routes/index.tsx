@@ -20,7 +20,7 @@ import AnimalesConsolidadoScreen from '../pages/Consolidado/AnimalesConsolidadoS
 import SubastasConsolidadoScreen from '../pages/Consolidado/SubastasConsolidadoScreen';
 import BodegasConsolidadoScreen from '../pages/Consolidado/BodegasConsolidadoScreen';
 import AgendaScreen from '../pages/AgendaScreen';
-import CamionerosScreen from '../pages/CamionerosScreen';
+import { CamionerosScreen } from '../pages/CamionerosScreen';
 import { useAuth } from '../contexts/AuthContext';
 import CreateUserScreen from '../pages/CreateUserScreen';
 
