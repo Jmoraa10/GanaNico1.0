@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const isDevelopment = process.env.NODE_ENV === 'development';
+const API_URL = isDevelopment 
+  ? 'http://localhost:3000'
+  : 'https://gananico1-0.onrender.com';
+
 export const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3000',
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json'
   }
