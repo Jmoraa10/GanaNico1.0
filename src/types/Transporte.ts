@@ -37,11 +37,11 @@ export interface ViajeTransporte {
   suministros?: SuministroTransporte[];
   gastos: GastoTransporte;
   detallesAdicionales?: string;
-  horaInicio: Date;
+  horaInicio: string;
   estado: 'EN_CURSO' | 'CULMINADO';
-  horaCulminacion?: Date;
-  fechaCreacion: Date;
-  fechaActualizacion: Date;
+  horaCulminacion?: string;
+  fechaCreacion: string;
+  fechaActualizacion: string;
 }
 
 export interface ResumenViaje {

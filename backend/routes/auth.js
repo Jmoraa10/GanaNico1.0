@@ -78,7 +78,10 @@ router.get('/users', verifyToken, async (req, res) => {
           displayName: userRecord.displayName,
           phoneNumber: userRecord.phoneNumber,
           disabled: userRecord.disabled,
-          metadata: userRecord.metadata
+          metadata: {
+            creationTime: userRecord.metadata.creationTime,
+            lastSignInTime: userRecord.metadata.lastSignInTime
+          }
         }));
         
         accum.push(...users);
@@ -104,7 +107,8 @@ router.get('/users', verifyToken, async (req, res) => {
     res.status(500).json({ 
       error: 'Error al listar usuarios', 
       details: error.message,
-      code: error.code
+      code: error.code,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
