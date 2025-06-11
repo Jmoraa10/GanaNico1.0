@@ -4,18 +4,18 @@ import { api } from '../config/api.js';
 const BASE_URL = '/api/transportes';
 
 export const transporteService = {
-  async crearViaje(viaje: Omit<ViajeTransporte, 'id' | 'fechaCreacion' | 'fechaActualizacion'>): Promise<ViajeTransporte> {
+  async crearViaje(viaje: Omit<ViajeTransporte, '_id' | 'fechaCreacion' | 'fechaActualizacion'>): Promise<ViajeTransporte> {
     const response = await api.post(`${BASE_URL}/crear`, viaje);
     return response.data;
   },
 
-  async actualizarViaje(id: string, viaje: Partial<ViajeTransporte>): Promise<ViajeTransporte> {
-    const response = await api.put(`${BASE_URL}/actualizar/${id}`, viaje);
+  async actualizarViaje(_id: string, viaje: Partial<ViajeTransporte>): Promise<ViajeTransporte> {
+    const response = await api.put(`${BASE_URL}/actualizar/${_id}`, viaje);
     return response.data;
   },
 
-  async eliminarViaje(id: string): Promise<void> {
-    await api.delete(`${BASE_URL}/eliminar/${id}`);
+  async eliminarViaje(_id: string): Promise<void> {
+    await api.delete(`${BASE_URL}/eliminar/${_id}`);
   },
 
   async obtenerViajes(): Promise<ViajeTransporte[]> {
@@ -33,8 +33,8 @@ export const transporteService = {
     return response.data;
   },
 
-  async obtenerViaje(id: string): Promise<ViajeTransporte> {
-    const response = await api.get(`${BASE_URL}/detalle/${id}`);
+  async obtenerViaje(_id: string): Promise<ViajeTransporte> {
+    const response = await api.get(`${BASE_URL}/detalle/${_id}`);
     return response.data;
   },
 

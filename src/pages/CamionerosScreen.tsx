@@ -96,18 +96,23 @@ export const CamionerosScreen = () => {
   };
 
   const handleFinalizarViaje = async (viaje: ViajeTransporte) => {
+    console.log('Viaje seleccionado:', viaje);
+    if (!viaje._id) {
+      console.error('El viaje no tiene ID:', viaje);
+      return;
+    }
     setViajeSeleccionado(viaje);
     setIsFinalizarDialogOpen(true);
   };
 
   const confirmarFinalizacion = async () => {
-    if (!viajeSeleccionado || !viajeSeleccionado.id) {
+    if (!viajeSeleccionado || !viajeSeleccionado._id) {
       console.error('No se ha seleccionado un viaje o el ID es inválido');
       return;
     }
 
     try {
-      await transporteService.actualizarViaje(viajeSeleccionado.id, {
+      await transporteService.actualizarViaje(viajeSeleccionado._id, {
         estado: 'CULMINADO',
         detallesFinalizacion
       });
@@ -426,7 +431,7 @@ export const CamionerosScreen = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {viajesEnCurso.map(viaje => (
-              <div key={viaje.id} className="bg-white rounded-xl shadow-lg p-4">
+              <div key={viaje._id} className="bg-white rounded-xl shadow-lg p-4">
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="font-bold text-lg">{viaje.camionero}</h3>
@@ -434,9 +439,10 @@ export const CamionerosScreen = () => {
                   </div>
                   <button
                     onClick={() => handleFinalizarViaje(viaje)}
-                    className="text-green-600 hover:text-green-700"
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors duration-300"
                   >
-                    <CheckCircle size={24} />
+                    <CheckCircle size={20} />
+                    <span>Culminar Viaje</span>
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -466,7 +472,7 @@ export const CamionerosScreen = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {viajesCulminados.map(viaje => (
-              <div key={viaje.id} className="bg-white rounded-xl shadow-lg p-4">
+              <div key={viaje._id} className="bg-white rounded-xl shadow-lg p-4">
                 <div className="mb-4">
                   <h3 className="font-bold text-lg">{viaje.camionero}</h3>
                   <p className="text-gray-600">{viaje.origen} → {viaje.destino}</p>

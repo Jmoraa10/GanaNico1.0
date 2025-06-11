@@ -28,7 +28,7 @@ export interface GastoTransporte {
 }
 
 export interface ViajeTransporte {
-  id?: string;
+  _id?: string;
   camionero: string;
   origen: string;
   destino: string;
