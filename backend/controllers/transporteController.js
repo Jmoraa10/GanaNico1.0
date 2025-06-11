@@ -77,14 +77,25 @@ exports.obtenerViaje = async (req, res) => {
 // Actualizar un viaje
 exports.actualizarViaje = async (req, res) => {
   try {
+    const { detallesFinalizacion } = req.body;
+    const updateData = { ...req.body };
+    
+    // Si se está marcando como culminado, agregar la hora de culminación
+    if (req.body.estado === 'CULMINADO' && !req.body.horaCulminacion) {
+      updateData.horaCulminacion = new Date();
+      updateData.detallesAdicionales = detallesFinalizacion || req.body.detallesAdicionales;
+    }
+
     const viaje = await Transporte.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
+    
     if (!viaje) {
       return res.status(404).json({ mensaje: 'Viaje no encontrado' });
     }
+
     const viajeConResumen = {
       ...viaje.toObject(),
       resumen: viaje.calcularResumen()

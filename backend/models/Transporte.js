@@ -83,14 +83,23 @@ const transporteSchema = new mongoose.Schema({
   detallesAdicionales: String,
   horaInicio: {
     type: Date,
-    required: true
+    required: true,
+    default: Date.now
   },
   estado: {
     type: String,
     enum: ['EN_CURSO', 'CULMINADO'],
     default: 'EN_CURSO'
   },
-  horaCulminacion: Date,
+  horaCulminacion: {
+    type: Date,
+    validate: {
+      validator: function(v) {
+        return !v || v >= this.horaInicio;
+      },
+      message: 'La hora de culminación debe ser posterior a la hora de inicio'
+    }
+  },
   duracionViaje: {
     type: Number, // duración en minutos
     default: 0
@@ -140,6 +149,14 @@ transporteSchema.pre('save', function(next) {
   if (this.isModified('estado') && this.estado === 'CULMINADO' && !this.horaCulminacion) {
     this.horaCulminacion = new Date();
   }
+  
+  // Actualizar la duración del viaje si está culminado
+  if (this.estado === 'CULMINADO' && this.horaCulminacion) {
+    const inicio = new Date(this.horaInicio);
+    const fin = new Date(this.horaCulminacion);
+    this.duracionViaje = Math.round((fin - inicio) / (1000 * 60));
+  }
+  
   next();
 });
 
