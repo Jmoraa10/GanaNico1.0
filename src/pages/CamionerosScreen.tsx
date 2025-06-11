@@ -69,7 +69,20 @@ const CamionerosScreen: React.FC = () => {
     try {
       const viajeData = {
         ...formData,
-        horaInicio: new Date(),
+        horaInicio: new Date().toISOString(),
+        gastos: {
+          diesel: Number(formData.gastos.diesel) || 0,
+          peajes: Number(formData.gastos.peajes) || 0,
+          viaticos: Number(formData.gastos.viaticos) || 0,
+        },
+        animales: formData.animales.map(animal => ({
+          ...animal,
+          cantidad: Number(animal.cantidad) || 0
+        })),
+        suministros: formData.suministros.map(suministro => ({
+          ...suministro,
+          cantidad: Number(suministro.cantidad) || 0
+        }))
       };
       await transporteService.crearViaje(viajeData);
       setShowForm(false);
@@ -107,7 +120,7 @@ const CamionerosScreen: React.FC = () => {
     try {
       await transporteService.actualizarViaje(selectedViaje.id!, {
         estado: 'CULMINADO',
-        horaCulminacion: new Date(),
+        horaCulminacion: new Date().toISOString(),
         detallesAdicionales: completionDetails,
       });
       setShowCompletionDialog(false);
