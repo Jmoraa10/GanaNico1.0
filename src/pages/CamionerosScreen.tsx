@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
-import { Home, LogOut, Plus, CheckCircle, Clock, Truck, DollarSign, Calendar } from "lucide-react";
+import { Home, LogOut, Plus, CheckCircle, Clock, Truck, DollarSign, Calendar, MapPin } from "lucide-react";
 import { ViajeTransporte, TipoCarga, TipoAnimal, AnimalTransporte, SuministroTransporte } from '../types/Transporte';
 import { transporteService } from '../services/transporteService';
 import { Dialog } from '@headlessui/react';
@@ -138,6 +138,26 @@ export const CamionerosScreen = () => {
       ...prev,
       suministros: [...prev.suministros, { descripcion: '', cantidad: 0, unidad: '' }],
     }));
+  };
+
+  const formatearFecha = (fecha: Date) => {
+    const opciones: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'America/Bogota'
+    };
+    return new Date(fecha).toLocaleString('es-CO', opciones);
+  };
+
+  const formatearDuracion = (inicio: Date, fin: Date) => {
+    const duracion = Math.round((new Date(fin).getTime() - new Date(inicio).getTime()) / (1000 * 60));
+    const horas = Math.floor(duracion / 60);
+    const minutos = duracion % 60;
+    return `${horas}h ${minutos}m`;
   };
 
   return (
@@ -454,10 +474,20 @@ export const CamionerosScreen = () => {
                     <DollarSign size={16} className="text-green-600" />
                     Total Gastos: ${viaje.gastos.diesel + viaje.gastos.peajes + viaje.gastos.viaticos}
                   </p>
-                  <p className="flex items-center gap-2">
-                    <Calendar size={16} className="text-purple-600" />
-                    Inicio: {viaje.horaInicio.toLocaleString()}
-                  </p>
+                  <div className="flex items-start gap-2">
+                    <Calendar size={16} className="text-purple-600 mt-1" />
+                    <div>
+                      <p className="font-medium">Inicio:</p>
+                      <p className="text-sm text-gray-600">{formatearFecha(viaje.horaInicio)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <MapPin size={16} className="text-red-600 mt-1" />
+                    <div>
+                      <p className="font-medium">Ruta:</p>
+                      <p className="text-sm text-gray-600">{viaje.origen} → {viaje.destino}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -486,14 +516,29 @@ export const CamionerosScreen = () => {
                     <DollarSign size={16} className="text-green-600" />
                     Total Gastos: ${viaje.gastos.diesel + viaje.gastos.peajes + viaje.gastos.viaticos}
                   </p>
-                  <p className="flex items-center gap-2">
-                    <Calendar size={16} className="text-purple-600" />
-                    Inicio: {viaje.horaInicio.toLocaleString()}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <CheckCircle size={16} className="text-green-600" />
-                    Culminación: {viaje.horaCulminacion?.toLocaleString()}
-                  </p>
+                  <div className="flex items-start gap-2">
+                    <Calendar size={16} className="text-purple-600 mt-1" />
+                    <div>
+                      <p className="font-medium">Inicio:</p>
+                      <p className="text-sm text-gray-600">{formatearFecha(viaje.horaInicio)}</p>
+                      {viaje.horaCulminacion && (
+                        <>
+                          <p className="font-medium mt-2">Culminación:</p>
+                          <p className="text-sm text-gray-600">{formatearFecha(viaje.horaCulminacion)}</p>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Duración: {formatearDuracion(viaje.horaInicio, viaje.horaCulminacion)}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <MapPin size={16} className="text-red-600 mt-1" />
+                    <div>
+                      <p className="font-medium">Ruta:</p>
+                      <p className="text-sm text-gray-600">{viaje.origen} → {viaje.destino}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
