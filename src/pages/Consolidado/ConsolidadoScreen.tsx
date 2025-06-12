@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from "react-router-dom";
 import { LogOut, Home, Truck } from "lucide-react";
-import { Hammer, Warehouse } from "lucide-react";
+import { Warehouse } from "lucide-react";
 import { Gavel } from "lucide-react";
 
 const cardData = [

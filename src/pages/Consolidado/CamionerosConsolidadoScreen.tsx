@@ -19,7 +19,7 @@ export default function CamionerosConsolidadoScreen() {
   const [modal, setModal] = useState<null | { key: string; label: string; detalle: { viaje: string; estado: string }[]; total: number }>(null);
 
   useEffect(() => {
-    transporteService.getAllViajes()
+    transporteService.obtenerViajes()
       .then(setViajes)
       .catch(() => setError("Error al cargar viajes"))
       .finally(() => setLoading(false));
@@ -41,13 +41,13 @@ export default function CamionerosConsolidadoScreen() {
     });
 
     // Agregar al detalle del estado correspondiente
-    if (viaje.estado === 'enCurso') {
+    if (viaje.estado === 'EN_CURSO') {
       resumen.enCurso.total++;
       resumen.enCurso.detalle.push({
         viaje: `Viaje ${viaje._id}`,
         estado: viaje.estado
       });
-    } else if (viaje.estado === 'culminado') {
+    } else if (viaje.estado === 'CULMINADO') {
       resumen.culminados.total++;
       resumen.culminados.detalle.push({
         viaje: `Viaje ${viaje._id}`,
