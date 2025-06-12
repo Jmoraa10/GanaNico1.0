@@ -1,36 +1,43 @@
+import React from 'react';
 import { useNavigate } from "react-router-dom";
 import { LogOut, Home, Truck } from "lucide-react";
 import { Hammer, Warehouse } from "lucide-react";
+import { Gavel } from "lucide-react";
 
 const cardData = [
   {
     title: "ANIMALES",
-    description: "REGISTRO TOTAL DE FINCAS",
-    action: true,
-    icon: <span className="text-[80px] mb-4">🐄</span>,
+    icon: <span className="text-[32px]">🐄</span>,
+    path: '/consolidado/animales',
+    description: "Resumen de movimientos de animales",
+    allowedRoles: ['admin', 'capataz']
   },
   {
-    title: "SUBSTAS",
-    description: "DATOS ACTUALIZADOS DE SUBASTAS",
-    action: true,
-    icon: <Hammer size={80} className="text-blue-700 mb-4" />,
+    title: "SUBASTAS",
+    icon: <Gavel className="w-8 h-8" />,
+    path: '/consolidado/subastas',
+    description: "Resumen de subastas",
+    allowedRoles: ['admin']
   },
   {
     title: "BODEGAS",
-    description: "INVENTARIO GENERAL",
-    action: true,
-    icon: <Warehouse size={80} className="text-yellow-700 mb-4" />,
+    icon: <Warehouse className="w-8 h-8" />,
+    path: '/consolidado/bodegas',
+    description: "Resumen de bodegas",
+    allowedRoles: ['admin', 'capataz']
   },
   {
     title: "CAMIONEROS",
-    description: "REGISTRO DE TRANSPORTES",
-    action: true,
-    icon: <Truck size={80} className="text-green-700 mb-4" />,
-  },
+    icon: <Truck className="w-8 h-8" />,
+    path: '/consolidado/camioneros',
+    description: "Resumen de viajes de transporte",
+    allowedRoles: ['admin', 'camionero']
+  }
 ];
 
-export default function ConsolidadoScreen() {
+const ConsolidadoScreen: React.FC = () => {
   const navigate = useNavigate();
+  const userRole = localStorage.getItem('role') || '';
 
   return (
     <div className="relative w-full min-h-screen overflow-hidden font-rio">
@@ -90,11 +97,8 @@ export default function ConsolidadoScreen() {
           {cardData.map((card) => (
             <div
               key={card.title}
-              className={`bg-white bg-opacity-90 border-2 border-green-700 rounded-2xl p-8 shadow-lg flex flex-col items-center w-full min-h-[260px] mb-4 md:mb-0 hover:scale-105 transition-transform duration-200 ${card.action ? 'cursor-pointer' : ''}`}
-              onClick={card.title === 'ANIMALES' ? () => navigate('/consolidado/animales') : 
-                      card.title === 'SUBSTAS' ? () => navigate('/consolidado/subastas') : 
-                      card.title === 'BODEGAS' ? () => navigate('/consolidado/bodegas') :
-                      card.title === 'CAMIONEROS' ? () => navigate('/consolidado/camioneros') : undefined}
+              className={`bg-white bg-opacity-90 border-2 border-green-700 rounded-2xl p-8 shadow-lg flex flex-col items-center w-full min-h-[260px] mb-4 md:mb-0 hover:scale-105 transition-transform duration-200 ${card.allowedRoles.includes(userRole) ? 'cursor-pointer' : ''}`}
+              onClick={() => card.allowedRoles.includes(userRole) && navigate(card.path)}
             >
               {card.icon}
               <h3 className="text-2xl font-bold text-green-800 mb-2 text-center font-rio">
@@ -107,4 +111,6 @@ export default function ConsolidadoScreen() {
       </div>
     </div>
   );
-} 
+};
+
+export default ConsolidadoScreen; 

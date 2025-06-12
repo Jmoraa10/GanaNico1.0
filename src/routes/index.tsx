@@ -19,10 +19,12 @@ import ConsolidadoScreen from '../pages/Consolidado/ConsolidadoScreen';
 import AnimalesConsolidadoScreen from '../pages/Consolidado/AnimalesConsolidadoScreen';
 import SubastasConsolidadoScreen from '../pages/Consolidado/SubastasConsolidadoScreen';
 import BodegasConsolidadoScreen from '../pages/Consolidado/BodegasConsolidadoScreen';
+import CamionerosConsolidadoScreen from '../pages/Consolidado/CamionerosConsolidadoScreen';
 import AgendaScreen from '../pages/AgendaScreen';
 import { CamionerosScreen } from '../pages/CamionerosScreen';
 import { useAuth } from '../contexts/AuthContext';
 import CreateUserScreen from '../pages/CreateUserScreen';
+import UsuariosScreen from '../pages/UsuariosScreen';
 
 
 interface PrivateRouteProps {
@@ -222,6 +224,14 @@ const AppRoutes: React.FC = () => {
         }
       />
       <Route
+        path="/consolidado/camioneros"
+        element={
+          <PrivateRoute allowedRoles={['admin', 'camionero']}>
+            <CamionerosConsolidadoScreen />
+          </PrivateRoute>
+        }
+      />
+      <Route
         path="/agenda"
         element={
           <PrivateRoute allowedRoles={['admin']}>
@@ -232,7 +242,7 @@ const AppRoutes: React.FC = () => {
       <Route
         path="/camioneros"
         element={
-          <PrivateRoute allowedRoles={['admin']}>
+          <PrivateRoute allowedRoles={['admin', 'camionero']}>
             <CamionerosScreen />
           </PrivateRoute>
         }
@@ -246,12 +256,14 @@ const AppRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/"
+        path="/usuarios"
         element={
-          <Navigate to="/login" replace />
+          <PrivateRoute allowedRoles={['admin']}>
+            <UsuariosScreen />
+          </PrivateRoute>
         }
       />
-      <Route path="*" element={<div>Página no encontrada</div>} />
+      <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   );
 };

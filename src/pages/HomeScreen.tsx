@@ -43,7 +43,7 @@ export default function HomeScreen() {
       icon: <Truck size={40} className="text-white" />,
       path: "/camioneros",
       description: "Gestión de transportistas",
-      allowedRoles: ['admin']
+      allowedRoles: ['admin', 'camionero']
     },
   ];
 

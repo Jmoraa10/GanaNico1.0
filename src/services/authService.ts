@@ -18,7 +18,7 @@ interface UserData {
   token: string;
   email: string;
   uid: string;
-  role: 'admin' | 'capataz';
+  role: 'admin' | 'capataz' | 'camionero';
 }
 
 // Interceptor para manejar errores de autenticación
@@ -107,7 +107,7 @@ export const login = async (email: string, password: string) => {
           const userDocRef = doc(db, 'Users', userCredential.user.uid);
           const userDoc = await getDoc(userDocRef);
           
-          let role: 'admin' | 'capataz' = 'capataz';
+          let role: 'admin' | 'capataz' | 'camionero' = 'capataz';
           
           if (isAdmin) {
             role = 'admin';
@@ -223,7 +223,7 @@ export const checkAuth = async () => {
   }
 };
 
-export const updateUserRole = async (userId: string, newRole: 'admin' | 'capataz') => {
+export const updateUserRole = async (userId: string, newRole: 'admin' | 'capataz' | 'camionero') => {
   try {
     const userDocRef = doc(db, 'Users', userId);
     await setDoc(userDocRef, {

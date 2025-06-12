@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else if (userData?.role) {
             role = userData.role;
           } else {
-            role = 'capataz';
+            role = 'capataz'; // Rol por defecto
           }
           const newUser = {
             uid: firebaseUser.uid,
