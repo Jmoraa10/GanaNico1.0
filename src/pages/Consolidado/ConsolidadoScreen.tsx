@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { LogOut, Home, Truck } from "lucide-react";
 import { Warehouse } from "lucide-react";
 import { Gavel } from "lucide-react";
+import { useAuth } from '../../contexts/AuthContext';
 
 const cardData = [
   {
@@ -10,7 +11,7 @@ const cardData = [
     icon: <span className="text-[32px]">🐄</span>,
     path: '/consolidado/animales',
     description: "Resumen de movimientos de animales",
-    allowedRoles: ['admin', 'capataz']
+    allowedRoles: ['admin']
   },
   {
     title: "SUBASTAS",
@@ -24,20 +25,25 @@ const cardData = [
     icon: <Warehouse className="w-8 h-8" />,
     path: '/consolidado/bodegas',
     description: "Resumen de bodegas",
-    allowedRoles: ['admin', 'capataz']
+    allowedRoles: ['admin']
   },
   {
     title: "CAMIONEROS",
     icon: <Truck className="w-8 h-8" />,
     path: '/consolidado/camioneros',
     description: "Resumen de viajes de transporte",
-    allowedRoles: ['admin', 'camionero']
+    allowedRoles: ['admin']
   }
 ];
 
 const ConsolidadoScreen: React.FC = () => {
   const navigate = useNavigate();
-  const userRole = localStorage.getItem('role') || '';
+  const { user } = useAuth();
+
+  const handleCardClick = (path: string) => {
+    console.log('Navegando a:', path);
+    navigate(path);
+  };
 
   return (
     <div className="relative w-full min-h-screen overflow-hidden font-rio">
@@ -97,8 +103,8 @@ const ConsolidadoScreen: React.FC = () => {
           {cardData.map((card) => (
             <div
               key={card.title}
-              className={`bg-white bg-opacity-90 border-2 border-green-700 rounded-2xl p-8 shadow-lg flex flex-col items-center w-full min-h-[260px] mb-4 md:mb-0 hover:scale-105 transition-transform duration-200 ${card.allowedRoles.includes(userRole) ? 'cursor-pointer' : ''}`}
-              onClick={() => card.allowedRoles.includes(userRole) && navigate(card.path)}
+              className={`bg-white bg-opacity-90 border-2 border-green-700 rounded-2xl p-8 shadow-lg flex flex-col items-center w-full min-h-[260px] mb-4 md:mb-0 hover:scale-105 transition-transform duration-200 cursor-pointer`}
+              onClick={() => handleCardClick(card.path)}
             >
               {card.icon}
               <h3 className="text-2xl font-bold text-green-800 mb-2 text-center font-rio">
