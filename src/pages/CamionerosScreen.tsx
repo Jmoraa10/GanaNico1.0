@@ -26,6 +26,7 @@ export const CamionerosScreen = () => {
   const [isFinalizarDialogOpen, setIsFinalizarDialogOpen] = useState(false);
   const [viajeSeleccionado, setViajeSeleccionado] = useState<ViajeTransporte | null>(null);
   const [detallesFinalizacion, setDetallesFinalizacion] = useState('');
+  const [isDetallesDialogOpen, setIsDetallesDialogOpen] = useState(false);
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -114,10 +115,14 @@ export const CamionerosScreen = () => {
     }
 
     try {
-      await transporteService.actualizarViaje(viajeSeleccionado._id, {
+      const datosActualizacion: Partial<ViajeTransporte> = {
         estado: 'CULMINADO',
-        detallesFinalizacion
-      });
+        detallesFinalizacion,
+        horaCulminacion: new Date()
+      };
+      
+      console.log('Actualizando viaje con datos:', datosActualizacion);
+      await transporteService.actualizarViaje(viajeSeleccionado._id, datosActualizacion);
       await cargarViajes();
       setIsFinalizarDialogOpen(false);
       setDetallesFinalizacion('');
@@ -521,56 +526,21 @@ export const CamionerosScreen = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {viajesCulminados.map(viaje => (
-              <div key={viaje._id} className="bg-white rounded-xl shadow-lg p-4">
-                <div className="mb-4">
+              <div 
+                key={viaje._id} 
+                className="bg-white rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl transition-shadow duration-300"
+                onClick={() => {
+                  setViajeSeleccionado(viaje);
+                  setIsDetallesDialogOpen(true);
+                }}
+              >
+                <div className="mb-2">
                   <h3 className="font-bold text-lg">{viaje.camionero}</h3>
                   <p className="text-gray-600">Placa: {viaje.placaCamion}</p>
                   <p className="text-gray-600">{viaje.origen} → {viaje.destino}</p>
-                </div>
-                <div className="space-y-2">
-                  <p className="flex items-center gap-2">
-                    <Truck size={16} className="text-blue-600" />
+                  <p className="text-gray-600">
                     {viaje.tipoCarga === 'ANIMALES' ? 'Transporte de Animales' : 'Transporte de Suministros'}
                   </p>
-                  <p className="flex items-center gap-2">
-                    <DollarSign size={16} className="text-green-600" />
-                    Total Gastos: ${viaje.gastos.diesel + viaje.gastos.peajes + viaje.gastos.viaticos}
-                  </p>
-                  <div className="flex items-start gap-2">
-                    <Calendar size={16} className="text-purple-600 mt-1" />
-                    <div>
-                      <p className="font-medium">Inicio:</p>
-                      <p className="text-sm text-gray-600">{formatearFecha(viaje.horaInicio)}</p>
-                      {viaje.horaCulminacion && (
-                        <>
-                          <p className="font-medium mt-2">Culminación:</p>
-                          <p className="text-sm text-gray-600">{formatearFecha(viaje.horaCulminacion)}</p>
-                          <p className="text-sm text-gray-500 mt-1">
-                            Duración: {formatearDuracion(viaje.horaInicio, viaje.horaCulminacion)}
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <MapPin size={16} className="text-red-600 mt-1" />
-                    <div>
-                      <p className="font-medium">Ruta:</p>
-                      <p className="text-sm text-gray-600">{viaje.origen} → {viaje.destino}</p>
-                    </div>
-                  </div>
-                  {viaje.detallesAdicionales && (
-                    <div className="mt-2 p-2 bg-gray-50 rounded-lg">
-                      <p className="font-medium text-gray-700">Detalles Adicionales:</p>
-                      <p className="text-sm text-gray-600">{viaje.detallesAdicionales}</p>
-                    </div>
-                  )}
-                  {viaje.detallesFinalizacion && (
-                    <div className="mt-2 p-2 bg-green-50 rounded-lg">
-                      <p className="font-medium text-green-700">Detalles de Finalización:</p>
-                      <p className="text-sm text-green-600">{viaje.detallesFinalizacion}</p>
-                    </div>
-                  )}
                 </div>
               </div>
             ))}
@@ -620,6 +590,159 @@ export const CamionerosScreen = () => {
                 onClick={confirmarFinalizacion}
               >
                 Confirmar Finalización
+              </button>
+            </div>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Diálogo de Detalles del Viaje */}
+      <Dialog
+        open={isDetallesDialogOpen}
+        onClose={() => setIsDetallesDialogOpen(false)}
+        className="fixed inset-0 z-10 overflow-y-auto"
+      >
+        <div className="flex items-center justify-center min-h-screen">
+          <Dialog.Overlay className="fixed inset-0 bg-black opacity-30" />
+
+          <div className="relative bg-white rounded-lg max-w-2xl w-full mx-4 p-6">
+            <Dialog.Title className="text-lg font-medium text-gray-900 mb-4">
+              Detalles del Viaje
+            </Dialog.Title>
+
+            {viajeSeleccionado && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="font-medium text-gray-700">Camionero</p>
+                    <p className="text-gray-600">{viajeSeleccionado.camionero}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-700">Placa del Camión</p>
+                    <p className="text-gray-600">{viajeSeleccionado.placaCamion}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-700">Origen</p>
+                    <p className="text-gray-600">{viajeSeleccionado.origen}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-700">Destino</p>
+                    <p className="text-gray-600">{viajeSeleccionado.destino}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="font-medium text-gray-700">Tipo de Carga</p>
+                  <p className="text-gray-600">
+                    {viajeSeleccionado.tipoCarga === 'ANIMALES' ? 'Transporte de Animales' : 'Transporte de Suministros'}
+                  </p>
+                </div>
+
+                {viajeSeleccionado.tipoCarga === 'ANIMALES' && viajeSeleccionado.animales && (
+                  <div>
+                    <p className="font-medium text-gray-700 mb-2">Animales Transportados</p>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      {viajeSeleccionado.animales.map((animal, index) => (
+                        <div key={index} className="flex justify-between items-center py-1">
+                          <span className="text-gray-600">{TIPOS_ANIMALES.find(t => t.value === animal.tipo)?.label}</span>
+                          <span className="font-medium text-gray-700">{animal.cantidad}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {viajeSeleccionado.tipoCarga === 'SUMINISTROS' && viajeSeleccionado.suministros && (
+                  <div>
+                    <p className="font-medium text-gray-700 mb-2">Suministros Transportados</p>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      {viajeSeleccionado.suministros.map((suministro, index) => (
+                        <div key={index} className="flex justify-between items-center py-1">
+                          <span className="text-gray-600">{suministro.descripcion}</span>
+                          <span className="font-medium text-gray-700">
+                            {suministro.cantidad} {suministro.unidad}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <p className="font-medium text-gray-700 mb-2">Gastos</p>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-gray-600">Diesel</span>
+                      <span className="font-medium text-gray-700">${viajeSeleccionado.gastos.diesel}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-gray-600">Peajes</span>
+                      <span className="font-medium text-gray-700">${viajeSeleccionado.gastos.peajes}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-gray-600">Viáticos</span>
+                      <span className="font-medium text-gray-700">${viajeSeleccionado.gastos.viaticos}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1 border-t border-gray-200 mt-2 pt-2">
+                      <span className="font-medium text-gray-700">Total</span>
+                      <span className="font-bold text-gray-900">
+                        ${viajeSeleccionado.gastos.diesel + viajeSeleccionado.gastos.peajes + viajeSeleccionado.gastos.viaticos}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="font-medium text-gray-700 mb-2">Tiempos</p>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-gray-600">Inicio</span>
+                      <span className="font-medium text-gray-700">{formatearFecha(viajeSeleccionado.horaInicio)}</span>
+                    </div>
+                    {viajeSeleccionado.horaCulminacion && (
+                      <>
+                        <div className="flex justify-between items-center py-1">
+                          <span className="text-gray-600">Culminación</span>
+                          <span className="font-medium text-gray-700">{formatearFecha(viajeSeleccionado.horaCulminacion)}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-1">
+                          <span className="text-gray-600">Duración</span>
+                          <span className="font-medium text-gray-700">
+                            {formatearDuracion(viajeSeleccionado.horaInicio, viajeSeleccionado.horaCulminacion)}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {viajeSeleccionado.detallesAdicionales && (
+                  <div>
+                    <p className="font-medium text-gray-700 mb-2">Detalles Adicionales</p>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-gray-600">{viajeSeleccionado.detallesAdicionales}</p>
+                    </div>
+                  </div>
+                )}
+
+                {viajeSeleccionado.detallesFinalizacion && (
+                  <div>
+                    <p className="font-medium text-gray-700 mb-2">Detalles de Finalización</p>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-gray-600">{viajeSeleccionado.detallesFinalizacion}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                onClick={() => setIsDetallesDialogOpen(false)}
+              >
+                Cerrar
               </button>
             </div>
           </div>
