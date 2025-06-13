@@ -115,8 +115,8 @@ export const CamionerosScreen = () => {
     }
 
     try {
-      const datosActualizacion: Partial<ViajeTransporte> = {
-        estado: 'CULMINADO',
+      const datosActualizacion = {
+        estado: 'CULMINADO' as const,
         detallesFinalizacion,
         horaCulminacion: new Date()
       };
