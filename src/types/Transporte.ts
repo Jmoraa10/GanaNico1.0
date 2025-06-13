@@ -30,6 +30,7 @@ export interface GastoTransporte {
 export interface ViajeTransporte {
   _id?: string;
   camionero: string;
+  placaCamion: string;
   origen: string;
   destino: string;
   tipoCarga: TipoCarga;

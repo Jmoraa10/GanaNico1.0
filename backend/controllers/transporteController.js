@@ -95,7 +95,7 @@ exports.actualizarViaje = async (req, res) => {
     // Si se está marcando como culminado, actualizar la hora de culminación
     if (req.body.estado === 'CULMINADO' && viaje.estado === 'EN_CURSO') {
       viaje.horaCulminacion = new Date();
-      viaje.detallesAdicionales = detallesFinalizacion;
+      viaje.detallesFinalizacion = detallesFinalizacion;
     }
 
     // Actualizar los demás campos

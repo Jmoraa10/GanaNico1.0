@@ -38,7 +38,7 @@ const cardData = [
 
 const ConsolidadoScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  useAuth();
 
   const handleCardClick = (path: string) => {
     console.log('Navegando a:', path);

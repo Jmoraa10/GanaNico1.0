@@ -30,6 +30,7 @@ export const CamionerosScreen = () => {
   // Estado del formulario
   const [formData, setFormData] = useState({
     camionero: '',
+    placaCamion: '',
     origen: '',
     destino: '',
     tipoCarga: 'ANIMALES' as TipoCarga,
@@ -76,6 +77,7 @@ export const CamionerosScreen = () => {
       // Resetear formulario
       setFormData({
         camionero: '',
+        placaCamion: '',
         origen: '',
         destino: '',
         tipoCarga: 'ANIMALES',
@@ -220,6 +222,16 @@ export const CamionerosScreen = () => {
                     type="text"
                     value={formData.camionero}
                     onChange={e => setFormData(prev => ({ ...prev, camionero: e.target.value }))}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Placa del Camión</label>
+                  <input
+                    type="text"
+                    value={formData.placaCamion}
+                    onChange={e => setFormData(prev => ({ ...prev, placaCamion: e.target.value }))}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
                     required
                   />
@@ -455,6 +467,7 @@ export const CamionerosScreen = () => {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="font-bold text-lg">{viaje.camionero}</h3>
+                    <p className="text-gray-600">Placa: {viaje.placaCamion}</p>
                     <p className="text-gray-600">{viaje.origen} → {viaje.destino}</p>
                   </div>
                   <button
@@ -488,6 +501,12 @@ export const CamionerosScreen = () => {
                       <p className="text-sm text-gray-600">{viaje.origen} → {viaje.destino}</p>
                     </div>
                   </div>
+                  {viaje.detallesAdicionales && (
+                    <div className="mt-2 p-2 bg-gray-50 rounded-lg">
+                      <p className="font-medium text-gray-700">Detalles Adicionales:</p>
+                      <p className="text-sm text-gray-600">{viaje.detallesAdicionales}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -505,6 +524,7 @@ export const CamionerosScreen = () => {
               <div key={viaje._id} className="bg-white rounded-xl shadow-lg p-4">
                 <div className="mb-4">
                   <h3 className="font-bold text-lg">{viaje.camionero}</h3>
+                  <p className="text-gray-600">Placa: {viaje.placaCamion}</p>
                   <p className="text-gray-600">{viaje.origen} → {viaje.destino}</p>
                 </div>
                 <div className="space-y-2">
@@ -539,6 +559,18 @@ export const CamionerosScreen = () => {
                       <p className="text-sm text-gray-600">{viaje.origen} → {viaje.destino}</p>
                     </div>
                   </div>
+                  {viaje.detallesAdicionales && (
+                    <div className="mt-2 p-2 bg-gray-50 rounded-lg">
+                      <p className="font-medium text-gray-700">Detalles Adicionales:</p>
+                      <p className="text-sm text-gray-600">{viaje.detallesAdicionales}</p>
+                    </div>
+                  )}
+                  {viaje.detallesFinalizacion && (
+                    <div className="mt-2 p-2 bg-green-50 rounded-lg">
+                      <p className="font-medium text-green-700">Detalles de Finalización:</p>
+                      <p className="text-sm text-green-600">{viaje.detallesFinalizacion}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

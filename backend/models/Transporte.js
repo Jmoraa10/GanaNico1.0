@@ -61,6 +61,10 @@ const transporteSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  placaCamion: {
+    type: String,
+    required: true
+  },
   origen: {
     type: String,
     required: true
@@ -81,6 +85,7 @@ const transporteSchema = new mongoose.Schema({
     required: true
   },
   detallesAdicionales: String,
+  detallesFinalizacion: String,
   horaInicio: {
     type: Date,
     required: true
